@@ -34,10 +34,10 @@ public class Artist {
 
     private int age;
 
-    @OneToMany(mappedBy= "artisId", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy= "artistId", cascade = CascadeType.ALL)
     private List<?> singleSongList;
 
-    @OneToMany(mappedBy= "artisId",cascade = CascadeType.ALL)
+    @OneToMany(mappedBy= "artistId",cascade = CascadeType.ALL)
     private List<?> albumList;
 
 
