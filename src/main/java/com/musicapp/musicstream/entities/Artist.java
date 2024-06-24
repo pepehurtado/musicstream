@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -41,4 +42,7 @@ public class Artist {
         inverseJoinColumns = { @JoinColumn(name = "song_id") }
     )
     private Set<Song> singleSongList;
+
+    @OneToMany(mappedBy = "artist")
+    private Set<Album> albums;
 }
