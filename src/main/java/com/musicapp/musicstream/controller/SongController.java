@@ -1,6 +1,8 @@
 package com.musicapp.musicstream.controller;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.repository.AlbumRepository;
+import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,28 +34,52 @@ public class SongController {
     private SongRepository songRepository;
 
     @Autowired
-    private ArtistController artistController;
+    private ArtistRepository artistRepository;
+
+    @Autowired
+    private AlbumRepository albumRepository;
+    
 
     @Operation(summary = "Create a new song")
     @PostMapping
-    public ResponseEntity<Song> createSong(@RequestBody Song song) {
-        if(song.getArtists() == null || song.getArtists().isEmpty()) {
-            // Retorna un error 412 si no se especifica ningún artista
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-        else{
-            for (Artist artist : song.getArtists()) {
-                //Si el artista no existe, retorna un error 412. En caso contrario lo añade a  su lista de canciones
-                if(artistController.getArtistById(artist.getId()).getStatusCodeValue() == 404){
-                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
-                }
-                else{
-                    artistController.getArtistByName(artist.getName()).getBody().getSingleSongList().add(song);
-                }
-            }   
-        }
+    public ResponseEntity<?> createSong(@RequestBody Song song) {
         
+        // Si ya existe una canción con el mismo nombre no se puede crear
+        if (songRepository.findByTitle(song.getTitle()) != null) {
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe una canción con el nombre " + song.getTitle());
+        }
+
+        if (song.getArtists() == null || song.getArtists().isEmpty()) {
+            // Retorna un error 412 si no se especifica ningún artista
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se ha especificado ningún artista");
+        }
+
+        if (song.getAlbum() != null) {
+            if (albumRepository.findById(song.getAlbum().getId()).isEmpty()) {
+                // Retorna un error 412 si el álbum no existe
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El álbum con ID " + song.getAlbum().getId() + " no existe");
+            }
+        }
+
+        Set<Artist> existingArtists = new HashSet<>();
+        for (Artist artist : song.getArtists()) {
+            // Comprobar que el artista existe
+            Artist existingArtist = artistRepository.findById(artist.getId()).orElse(null);
+            if (existingArtist == null) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El artista con ID " + artist.getId() + " no existe");
+            }
+            existingArtists.add(existingArtist);
+        }
+
+        song.setArtists(existingArtists);
+
         Song savedSong = songRepository.save(song); // Guarda la canción en la base de datos
+
+        // Añadir la relación con los artistas
+        for (Artist artist : existingArtists) {
+            artist.addSong(savedSong);
+            artistRepository.save(artist);
+        }
 
         return ResponseEntity.ok(savedSong);
     }

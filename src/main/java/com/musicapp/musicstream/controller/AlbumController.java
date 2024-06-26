@@ -1,6 +1,8 @@
 package com.musicapp.musicstream.controller;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,7 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.entities.Album;
+import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.repository.AlbumRepository;
+import com.musicapp.musicstream.repository.ArtistRepository;
+import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,28 +33,48 @@ public class AlbumController {
     @Autowired
     private AlbumRepository albumRepository;
 
+
     @Autowired
-    private ArtistController artistController;
+    private ArtistRepository artistRepository;
+
+    @Autowired
+    private SongRepository songRepository;
 
     @Operation(summary = "Create a new album")
     @PostMapping
-    public ResponseEntity<Album> createAlbum(@RequestBody Album album) {
-
-        if(albumRepository.findByTitle(album.getTitle()) != null) {
-            // Retorna un error 412 si ya existe un album con el mismo nombre
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        }
-
-        if(album.getArtist() == null){
-            // Retorna un error 400 si no se especifica ningún artista
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
-        if(artistController.getArtistById(album.getArtist().getId()).getStatusCodeValue() == 404){
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
-        }
+    public ResponseEntity<?> createAlbum(@RequestBody Album album) {
         
-        Album savedAlbum = albumRepository.save(album); // Guarda la canción en la base de datos
+        // Si ya existe un álbum con el mismo nombre no se puede crear
+        if (albumRepository.findByTitle(album.getTitle()) != null) {
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe un álbum con el nombre " + album.getTitle());
+        }
+
+        if (album.getArtist() == null || artistRepository.findById(album.getArtist().getId()).isEmpty()) {
+            // Retorna un error 412 si el artista no existe
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El artista con ID " + album.getArtist().getId() + " no existe");
+        }
+
+        Set<Song> existingSongs = new HashSet<>();
+        if (album.getSongs() != null && !album.getSongs().isEmpty()) {
+            for (Song song : album.getSongs()) {
+                // Comprobar que la canción existe
+                Song existingSong = songRepository.findById(song.getId()).orElse(null);
+                if (existingSong == null) {
+                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("La canción con ID " + song.getId() + " no existe");
+                }
+                existingSongs.add(existingSong);
+            }
+        }
+
+        album.setSongs(existingSongs);
+
+        Album savedAlbum = albumRepository.save(album); // Guarda el álbum en la base de datos
+
+        // Añadir la relación con las canciones
+        for (Song song : existingSongs) {
+            song.setAlbum(savedAlbum);
+            songRepository.save(song);
+        }
 
         return ResponseEntity.ok(savedAlbum);
     }
