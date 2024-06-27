@@ -1,7 +1,5 @@
 package com.musicapp.musicstream.entities;
 
-import java.util.Date;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -11,17 +9,18 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "song")
+@Table(name = "album")
 @Data
 @NoArgsConstructor
-public class Song {
+public class Album {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -30,24 +29,28 @@ public class Song {
     private String title;
 
     @Column(nullable = false)
-    private Date time;
+    private String year;
+
+    @ManyToOne
+    @JoinColumn(name = "artist_id")
+    private Artist artist;
+
+    private String description;
+
+    private Integer numberOfSongs;
 
     private String url;
 
     
-    @ManyToMany(mappedBy = "singleSongList")
-    private Set<Artist> artists = new HashSet<>();
-
-    @ManyToOne
-    @JoinColumn(name = "album_id")
-    private Album album;
+    @OneToMany(mappedBy = "album")
+    private Set<Song> songs;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Song song = (Song) o;
-        return Objects.equals(id, song.id);
+        Album album = (Album) o;
+        return Objects.equals(id, album.id);
     }
 
     @Override
@@ -57,12 +60,14 @@ public class Song {
 
     @Override
     public String toString() {
-        return "Song{" +
+        return "Album{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
-                ", time=" + time +
+                ", year='" + year + '\'' +
+                ", description='" + description + '\'' +
+                ", numberOfSongs=" + numberOfSongs +
                 ", url='" + url + '\'' +
-                ", album=" + (album != null ? album.getId() : null) + // Evitar impresión completa del álbum
+                ", artist=" + (artist != null ? artist.getId() : null) + // Evitar impresión completa del artista
                 '}';
     }
 }

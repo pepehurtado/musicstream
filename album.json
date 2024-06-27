@@ -1,0 +1,32 @@
+{
+    "id":0,
+    "title": "Greatest Hits",
+    "year": "2023",
+    "artist": {
+      "id": 1
+    },
+    "description": "Collection of the best songs by the artist",
+    "numberOfSongs": 10,
+    "url": "https://example.com/albums/greatest-hits",
+    "songs": [
+      {
+        "id":1,
+        "title": "Song 1",
+        "time": "2023-01-01T00:00:00Z",
+        "url": "https://example.com/songs/song-1"
+      },
+      {
+  "id":2,
+        "title": "Song 2",
+        "time": "2023-01-02T00:00:00Z",
+        "url": "https://example.com/songs/song-2"
+      },
+      {
+  "id":3,
+        "title": "Song 3",
+        "time": "2023-01-03T00:00:00Z",
+        "url": "https://example.com/songs/song-3"
+      }
+    ]
+  }
+  

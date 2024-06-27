@@ -1,6 +1,10 @@
 package com.musicapp.musicstream.controller;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,8 +18,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.dto.DTOUtils;
+import com.musicapp.musicstream.dto.SongDTO;
+import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.repository.AlbumRepository;
+import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,57 +39,97 @@ public class SongController {
     private SongRepository songRepository;
 
     @Autowired
-    private ArtistController artistController;
+    private ArtistRepository artistRepository;
+
+    @Autowired
+    private AlbumRepository albumRepository;
+    
+    @Autowired
+    private DTOUtils dtoUtil;
 
     @Operation(summary = "Create a new song")
     @PostMapping
-    public ResponseEntity<Song> createSong(@RequestBody Song song) {
-        if(song.getArtists() == null || song.getArtists().isEmpty()) {
-            // Retorna un error 412 si no se especifica ningún artista
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-        else{
-            for (Artist artist : song.getArtists()) {
-                //Si el artista no existe, retorna un error 412. En caso contrario lo añade a  su lista de canciones
-                if(artistController.getArtistById(artist.getId()).getStatusCodeValue() == 404){
-                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
-                }
-                else{
-                    artistController.getArtistByName(artist.getName()).getBody().getSingleSongList().add(song);
-                }
-            }   
-        }
+    public ResponseEntity<?> createSong(@RequestBody Song song) {
         
+        // Si ya existe una canción con el mismo nombre no se puede crear
+        if (songRepository.findByTitle(song.getTitle()) != null) {
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe una canción con el nombre " + song.getTitle());
+        }
+
+        if (song.getArtists() == null || song.getArtists().isEmpty()) {
+            // Retorna un error 412 si no se especifica ningún artista
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se ha especificado ningún artista");
+        }
+
+        if (song.getAlbum() != null) {
+            if (albumRepository.findById(song.getAlbum().getId()).isEmpty()) {
+                // Retorna un error 412 si el álbum no existe
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El álbum con ID " + song.getAlbum().getId() + " no existe");
+            }
+            else {
+                Album album = albumRepository.findById(song.getAlbum().getId()).get();
+                album.setNumberOfSongs(album.getSongs().size());
+                albumRepository.save(album);
+                song.setAlbum(album);
+            }
+        }
+
+        Set<Artist> existingArtists = new HashSet<>();
+        for (Artist artist : song.getArtists()) {
+            // Comprobar que el artista existe
+            Artist existingArtist = artistRepository.findById(artist.getId()).orElse(null);
+            if (existingArtist == null) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El artista con ID " + artist.getId() + " no existe");
+            }
+            existingArtists.add(existingArtist);
+        }
+
+        song.setArtists(existingArtists);
+
         Song savedSong = songRepository.save(song); // Guarda la canción en la base de datos
 
-        return ResponseEntity.ok(savedSong);
+        // Añadir la relación con los artistas
+        for (Artist artist : existingArtists) {
+            artist.addSong(savedSong);
+            artistRepository.save(artist);
+        }
+        //Creamos el dto
+        SongDTO songDTO = dtoUtil.convertToDto(savedSong);
+        songDTO.setId(savedSong.getId());
+        return ResponseEntity.ok(songDTO);
     }
 
     @Operation(summary = "Get all songs")
     @GetMapping
-    public ResponseEntity<Iterable<Song>> getAllSongs() {
-        Iterable<Song> artists = songRepository.findAll();
-        return ResponseEntity.ok(artists);
+    public ResponseEntity<List<SongDTO>> getAllSongs() {
+        List<Song> songs = (List<Song>) songRepository.findAll();
+        List<SongDTO> songsDTO = songs.stream()
+                                             .map(dtoUtil::convertToDto)
+                                             .collect(Collectors.toList());
+        return ResponseEntity.ok(songsDTO);
     }
 
     @Operation(summary = "Get song by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Song> getSongById(@PathVariable Integer id) {
+    public ResponseEntity<SongDTO> getSongById(@PathVariable Integer id) {
         Optional<Song> song = songRepository.findById(id);
-        return song.map(ResponseEntity::ok)
-                     .orElseGet(() -> ResponseEntity.notFound().build());
+        //Creamos el dto
+        SongDTO songDTO = song.map(dtoUtil::convertToDto)
+                                     .orElse(null);
+        return songDTO != null ? ResponseEntity.ok(songDTO) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Get song by name")
     @GetMapping("/name/{name}")
-    public ResponseEntity<Song> getSongByName(@PathVariable String name) {
+    public ResponseEntity<SongDTO> getSongByName(@PathVariable String name) {
         Song song = songRepository.findByTitle(name);
-        return song != null ? ResponseEntity.ok(song) : ResponseEntity.notFound().build();
+        SongDTO songDTO = dtoUtil.convertToDto(song);
+        return song != null ? ResponseEntity.ok(songDTO) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Update song")
     @PutMapping("/{id}")
-    public ResponseEntity<Song> updateSong(@PathVariable Integer id, @RequestBody Song songDetails) {
+    public ResponseEntity<SongDTO> updateSong(@PathVariable Integer id, @RequestBody Song songDetails) {
         Optional<Song> songOptional = songRepository.findById(id);
         if (!songOptional.isPresent()) {
             return ResponseEntity.notFound().build();
@@ -93,7 +142,9 @@ public class SongController {
         song.setUrl(songDetails.getUrl());
 
         Song updatedSong = songRepository.save(song);
-        return ResponseEntity.ok(updatedSong);
+        SongDTO songDTO = dtoUtil.convertToDto(updatedSong);
+        songDTO.setId(updatedSong.getId());
+        return ResponseEntity.ok(songDTO);
     }
 
     @Operation(summary = "Delete song")
