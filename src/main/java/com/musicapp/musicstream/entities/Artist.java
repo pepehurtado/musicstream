@@ -68,4 +68,16 @@ public class Artist {
     public int hashCode() {
         return Objects.hash(id);
     }
+
+
+    @Override
+    public String toString() {
+        return "Artist{" +
+                "id=" + id +
+                ", age=" + age +
+                ", country='" + country + '\'' +
+                ", dateOfBirth=" + dateOfBirth +
+                ", name='" + name + '\'' +
+                '}';
+    }
 }

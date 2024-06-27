@@ -9,8 +9,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,7 +31,7 @@ public class Album {
     @Column(nullable = false)
     private String year;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "artist_id")
     private Artist artist;
 
@@ -56,5 +56,18 @@ public class Album {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Album{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", year='" + year + '\'' +
+                ", description='" + description + '\'' +
+                ", numberOfSongs=" + numberOfSongs +
+                ", url='" + url + '\'' +
+                ", artist=" + (artist != null ? artist.getId() : null) + // Evitar impresión completa del artista
+                '}';
     }
 }

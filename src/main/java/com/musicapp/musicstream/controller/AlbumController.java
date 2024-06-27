@@ -1,8 +1,10 @@
 package com.musicapp.musicstream.controller;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.dto.AlbumDTO;
+import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.repository.AlbumRepository;
@@ -39,6 +43,9 @@ public class AlbumController {
 
     @Autowired
     private SongRepository songRepository;
+
+    @Autowired
+    private DTOUtils dtoUtil;
 
     @Operation(summary = "Create a new album")
     @PostMapping
@@ -67,59 +74,66 @@ public class AlbumController {
         }
 
         album.setSongs(existingSongs);
-
+        album.setNumberOfSongs(existingSongs.size());
         Album savedAlbum = albumRepository.save(album); // Guarda el álbum en la base de datos
-
+        System.out.println("Album saved: " + savedAlbum.getSongs());
         // Añadir la relación con las canciones
         for (Song song : existingSongs) {
             song.setAlbum(savedAlbum);
             songRepository.save(song);
         }
-
-        return ResponseEntity.ok(savedAlbum);
+        //Creamos el DTO del album
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Get all albums")
     @GetMapping
-    public ResponseEntity<Iterable<Album>> getAllAlbums() {
-        Iterable<Album> artists = albumRepository.findAll();
-        return ResponseEntity.ok(artists);
+    public ResponseEntity<List<AlbumDTO>> getAllAlbums() {
+        List<Album> artists = (List<Album>) albumRepository.findAll();
+        List<AlbumDTO> artistDTOs = artists.stream()
+                                             .map(dtoUtil::convertToDto)
+                                             .collect(Collectors.toList());
+        return ResponseEntity.ok(artistDTOs);
     }
 
     @Operation(summary = "Get album by ID")
     @GetMapping("/{id}")
-    public ResponseEntity<Album> getAlbumById(@PathVariable Integer id) {
+    public ResponseEntity<AlbumDTO> getAlbumById(@PathVariable Integer id) {
         Optional<Album> album = albumRepository.findById(id);
-        return album.map(ResponseEntity::ok)
-                     .orElseGet(() -> ResponseEntity.notFound().build());
+        //Creamos el dto a partir del album
+        AlbumDTO albumDTO = album.map(dtoUtil::convertToDto)
+                                 .orElse(null);
+        return albumDTO != null ? ResponseEntity.ok(albumDTO) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Get album by name")
     @GetMapping("/name/{name}")
-    public ResponseEntity<Album> getAlbumByName(@PathVariable String name) {
+    public ResponseEntity<AlbumDTO> getAlbumByName(@PathVariable String name) {
         Album album = albumRepository.findByTitle(name);
-        return album != null ? ResponseEntity.ok(album) : ResponseEntity.notFound().build();
+        AlbumDTO albumDTO = dtoUtil.convertToDto(album);
+        return album != null ? ResponseEntity.ok(albumDTO) : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Update album")
     @PutMapping("/{id}")
-    public ResponseEntity<Album> updateAlbum(@PathVariable Integer id, @RequestBody Album albumDetails) {
+    public ResponseEntity<AlbumDTO> updateAlbum(@PathVariable Integer id, @RequestBody AlbumDTO albumDetailsDTO) {
         Optional<Album> albumOptional = albumRepository.findById(id);
         if (!albumOptional.isPresent()) {
             return ResponseEntity.notFound().build();
         }
 
         Album album = albumOptional.get();
-        album.setTitle(albumDetails.getTitle());
-        album.setYear(albumDetails.getYear());
-        album.setDescription(albumDetails.getDescription());
-        album.setNumberOfSongs(albumDetails.getNumberOfSongs());
+        album.setTitle(albumDetailsDTO.getTitle());
+        album.setYear(albumDetailsDTO.getYear());
+        album.setDescription(albumDetailsDTO.getDescription());
+        album.setNumberOfSongs(albumDetailsDTO.getNumberOfSongs());
 
-        //album.setAlbumId(albumDetails.getAlbumId());
-        album.setUrl(albumDetails.getUrl());
+        //album.setAlbumId(albumDetailsDTO.getAlbumId());
+        album.setUrl(albumDetailsDTO.getUrl());
 
         Album updatedAlbum = albumRepository.save(album);
-        return ResponseEntity.ok(updatedAlbum);
+        albumDetailsDTO.setId(updatedAlbum.getId());
+        return ResponseEntity.ok(albumDetailsDTO);
     }
 
     @Operation(summary = "Delete album")

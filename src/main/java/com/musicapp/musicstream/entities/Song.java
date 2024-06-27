@@ -12,7 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +38,7 @@ public class Song {
     @ManyToMany(mappedBy = "singleSongList")
     private Set<Artist> artists = new HashSet<>();
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "album_id")
     private Album album;
 
@@ -53,5 +53,16 @@ public class Song {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Song{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", time=" + time +
+                ", url='" + url + '\'' +
+                ", album=" + (album != null ? album.getId() : null) + // Evitar impresión completa del álbum
+                '}';
     }
 }
