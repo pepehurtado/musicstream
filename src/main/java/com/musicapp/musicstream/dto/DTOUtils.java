@@ -16,6 +16,7 @@ public class DTOUtils {
         SongDTO songDTO = new SongDTO();
         songDTO.setId(song.getId());
         songDTO.setTitle(song.getTitle());
+
         songDTO.setTime(song.getTime());
         songDTO.setUrl(song.getUrl());
         //convertimos los artistas a dto

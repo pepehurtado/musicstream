@@ -1,6 +1,5 @@
 package com.musicapp.musicstream.entities;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -30,7 +29,7 @@ public class Song {
     private String title;
 
     @Column(nullable = false)
-    private Date time;
+    private Integer time;
 
     private String url;
 

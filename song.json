@@ -1,10 +1,16 @@
 {
-    "id" : 0,
-    "title": "Song Example",
-    "time": "2023-01-01T00:00:00Z",
-    "url": "https://example.com/songs/song-example",
-    "album": {
-      "id": 1
-    }
+  "id": 0,
+  "title": "Wanda",
+  "time": 185,
+  "url": "LA PORTADA ",
+  "artists": [
+    {
+      "id": 3
+   }
+  ],
+  "album": {
+    "id": 1
   }
+}
+
   
