@@ -5,6 +5,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.common.ArtistSpecification;
 import com.musicapp.musicstream.dto.ArtistDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Artist;
+import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.repository.ArtistRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -104,4 +111,34 @@ public class ArtistController {
         artistRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Get artist by dynamic filter")
+    @PostMapping("/filter")
+    public ResponseEntity<?> filterBy(@RequestBody FilterStruct struct) {
+
+        // Construir el objeto Sort a partir de los criterios de ordenación
+        Sort sort = Sort.unsorted();
+        for (FilterStruct.SortCriteria sortCriteria : struct.getListOrderCriteria()) {
+            Sort.Direction direction = sortCriteria.getValuesorOrder() == FilterStruct.SortValue.ASC ? 
+                                       Sort.Direction.ASC : Sort.Direction.DESC;
+            sort = sort.and(Sort.by(direction, sortCriteria.getSortBy()));
+        }
+
+        // Construir el objeto Pageable a partir de la información de paginación y ordenación
+        Pageable pageable = PageRequest.of(struct.getPage().getPageIndex(), struct.getPage().getPageSize(), sort);
+
+        // Construir la especificación a partir de los criterios de búsqueda
+        Specification<Artist> specification = ArtistSpecification.getArtistsByFilters(struct.getListSearchCriteria());
+
+        // Realizar la consulta con el repositorio utilizando Pageable y Specification
+        Page<Artist> artists = artistRepository.findAll(specification, pageable);
+
+        // Convertir a DTO
+        List<ArtistDTO> artistDTOs = artists.stream()
+                                            .map(dtoUtil::convertToDto)
+                                            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(artistDTOs);
+    }
+    
 }

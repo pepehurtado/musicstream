@@ -1,6 +1,6 @@
 package com.musicapp.musicstream.dto;
 
-import java.util.Date;
+import java.sql.Date;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
