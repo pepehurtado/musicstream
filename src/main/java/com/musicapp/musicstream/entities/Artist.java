@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,7 +38,7 @@ public class Artist {
 
     private int age;
 
-    @ManyToMany
+    @ManyToMany(cascade=CascadeType.ALL)
     @JoinTable(
         name = "song_artist",
         joinColumns = { @JoinColumn(name = "artist_id") },
@@ -45,7 +46,7 @@ public class Artist {
     )
     private Set<Song> singleSongList = new HashSet<>();
 
-    @OneToMany(mappedBy = "artist")
+    @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)
     private Set<Album> albums = new HashSet<>();
 
     public boolean addSong(Song song) {

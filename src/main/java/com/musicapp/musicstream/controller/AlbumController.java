@@ -134,6 +134,7 @@ public class AlbumController {
         album.setYear(albumDetailsDTO.getYear());
         album.setDescription(albumDetailsDTO.getDescription());
         album.setNumberOfSongs(albumDetailsDTO.getNumberOfSongs());
+        album.setArtist(artistRepository.findById(albumDetailsDTO.getArtist().getId()).orElse(null));
 
         //album.setAlbumId(albumDetailsDTO.getAlbumId());
         album.setUrl(albumDetailsDTO.getUrl());
