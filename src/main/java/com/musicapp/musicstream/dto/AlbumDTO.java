@@ -13,11 +13,11 @@ public class AlbumDTO {
     private Integer id;
     private String title;
     private String year;
-    private ArtistDTO artist;
+    private Integer artist;
     private String description;
     private Integer numberOfSongs;
     private String url;
 
     @JsonIgnore
-    private Set<SongDTO> songs;
+    private Set<Integer> songs;
 }
