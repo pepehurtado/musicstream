@@ -27,6 +27,7 @@ import com.musicapp.musicstream.common.AlbumSpecification;
 import com.musicapp.musicstream.dto.AlbumDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Album;
+import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.repository.AlbumRepository;
@@ -81,9 +82,11 @@ public class AlbumController {
                     existingSong.setUrl(song.getUrl());
                     existingSong.setArtists(song.getArtists());
                     existingSong.setGenreList(song.getGenreList());
-                    existingSong.setAlbum(album);
+                    
+                    
                 }
                 existingSongs.add(existingSong);
+                songRepository.save(existingSong);
             }
         }
 
@@ -93,7 +96,13 @@ public class AlbumController {
         // Añadir la relación con las canciones
         for (Song song : existingSongs) {
             song.setAlbum(savedAlbum);
-            System.out.println("Song: " + song.getTitle() + " Album: " + song.getAlbum());
+            Set<Artist> artists = new HashSet<>();
+            Artist artist = artistRepository.findById(album.getArtist().getId()).get();
+            artist.addSong(song);
+
+            artists.add(artist);
+            song.setArtists(artists);
+
             songRepository.save(song);
         }
         //Creamos el DTO del album

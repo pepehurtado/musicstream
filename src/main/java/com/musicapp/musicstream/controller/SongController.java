@@ -165,8 +165,20 @@ public class SongController {
         Song song = songOptional.get();
         song.setTitle(songDetails.getTitle());
         song.setTime(songDetails.getTime());
-        //song.setAlbumId(songDetails.getAlbumId());
+        song.setAlbum(songDetails.getAlbum());
         song.setUrl(songDetails.getUrl());
+        //Actualizar la relacion desde el lado del artista
+        for (Artist artist : song.getArtists()) {
+            Artist artistaforid = artistRepository.findById(artist.getId()).orElse(null);
+            artistaforid.removeSong(song);
+            artistRepository.save(artistaforid);
+        }
+        for(Artist artist : songDetails.getArtists()){
+            Artist artistaforid = artistRepository.findById(artist.getId()).orElse(null);
+            artistaforid.addSong(song);
+            artistRepository.save(artistaforid);
+        }
+        song.setArtists(songDetails.getArtists());
 
         Song updatedSong = songRepository.save(song);
         SongDTO songDTO = dtoUtil.convertToDto(updatedSong);

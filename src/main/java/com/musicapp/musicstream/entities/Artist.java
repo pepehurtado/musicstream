@@ -53,6 +53,10 @@ public class Artist {
         return singleSongList.add(song);
     }
 
+    public boolean removeSong(Song song) {
+        return singleSongList.remove(song);
+    }
+
     public boolean addAlbum(Album album) {
         return albums.add(album);
     }
