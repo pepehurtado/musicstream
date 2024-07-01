@@ -29,9 +29,11 @@ import com.musicapp.musicstream.dto.SongDTO;
 import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
+import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
+import com.musicapp.musicstream.repository.GenreRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +52,9 @@ public class SongController {
 
     @Autowired
     private AlbumRepository albumRepository;
+
+    @Autowired
+    private GenreRepository genreRepository;
     
     @Autowired
     private DTOUtils dtoUtil;
@@ -62,25 +67,24 @@ public class SongController {
         if (songRepository.findByTitle(song.getTitle()) != null) {
             return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe una canción con el nombre " + song.getTitle());
         }
-
+    
         if (song.getArtists() == null || song.getArtists().isEmpty()) {
-            // Retorna un error 412 si no se especifica ningún artista
+            // Retorna un error 400 si no se especifica ningún artista
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se ha especificado ningún artista");
         }
-
+    
         if (song.getAlbum() != null) {
             if (albumRepository.findById(song.getAlbum().getId()).isEmpty()) {
                 // Retorna un error 412 si el álbum no existe
                 return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El álbum con ID " + song.getAlbum().getId() + " no existe");
-            }
-            else {
+            } else {
                 Album album = albumRepository.findById(song.getAlbum().getId()).get();
                 album.setNumberOfSongs(album.getSongs().size());
                 albumRepository.save(album);
                 song.setAlbum(album);
             }
         }
-
+    
         Set<Artist> existingArtists = new HashSet<>();
         for (Artist artist : song.getArtists()) {
             // Comprobar que el artista existe
@@ -90,21 +94,37 @@ public class SongController {
             }
             existingArtists.add(existingArtist);
         }
-
         song.setArtists(existingArtists);
-
+    
+        Set<Genre> existingGenres = new HashSet<>();
+        for (Genre genre : song.getGenreList()) {
+            Genre existingGenre = genreRepository.findById(genre.getId()).orElse(null);
+            if (existingGenre == null) {
+                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El género con ID " + genre.getId() + " no existe");
+            }
+            existingGenres.add(existingGenre);
+        }
+        song.setGenreList(existingGenres);
+    
         Song savedSong = songRepository.save(song); // Guarda la canción en la base de datos
-
+    
         // Añadir la relación con los artistas
         for (Artist artist : existingArtists) {
             artist.addSong(savedSong);
             artistRepository.save(artist);
         }
-        //Creamos el dto
+        // Añadir la relación con los géneros
+        for (Genre genre : existingGenres) {
+            genre.addSong(savedSong);
+            genreRepository.save(genre);
+        }
+        
+        // Creamos el DTO
         SongDTO songDTO = dtoUtil.convertToDto(savedSong);
         songDTO.setId(savedSong.getId());
         return ResponseEntity.ok(songDTO);
     }
+    
 
     @Operation(summary = "Get all songs")
     @GetMapping

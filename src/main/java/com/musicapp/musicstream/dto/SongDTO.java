@@ -1,5 +1,6 @@
 package com.musicapp.musicstream.dto;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import lombok.Data;
@@ -14,5 +15,6 @@ public class SongDTO {
     private String url;
     private Set<ArtistDTO> artists;
     private AlbumDTO album;
+    private Set<GenreDTO> genreList = new HashSet<>();
 
 }
