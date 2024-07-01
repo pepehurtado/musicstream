@@ -71,11 +71,17 @@ public class AlbumController {
         Set<Song> existingSongs = new HashSet<>();
         if (album.getSongs() != null && !album.getSongs().isEmpty()) {
             for (Song song : album.getSongs()) {
-                // Comprobar que la canción existe y si no existe, la creamos
-                Song existingSong = songRepository.findById(song.getId()).orElse(null);
+                // Comprobar que la canción existe
+                Song existingSong = songRepository.findByTitle(song.getTitle());
                 if (existingSong == null) {
-                    //Creamos la cancion
-                    Song savedSong = songRepository.save(song);
+                    //Si no existe creamos una cancion nueva
+                    existingSong = new Song();
+                    existingSong.setTitle(song.getTitle());
+                    existingSong.setTime(song.getTime());
+                    existingSong.setUrl(song.getUrl());
+                    existingSong.setArtists(song.getArtists());
+                    existingSong.setGenreList(song.getGenreList());
+                    existingSong.setAlbum(album);
                 }
                 existingSongs.add(existingSong);
             }
@@ -84,10 +90,10 @@ public class AlbumController {
         album.setSongs(existingSongs);
         album.setNumberOfSongs(existingSongs.size());
         Album savedAlbum = albumRepository.save(album); // Guarda el álbum en la base de datos
-        System.out.println("Album saved: " + savedAlbum.getSongs());
         // Añadir la relación con las canciones
         for (Song song : existingSongs) {
             song.setAlbum(savedAlbum);
+            System.out.println("Song: " + song.getTitle() + " Album: " + song.getAlbum());
             songRepository.save(song);
         }
         //Creamos el DTO del album
