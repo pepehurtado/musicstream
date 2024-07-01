@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
+import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
 
 @Service
@@ -16,18 +17,19 @@ public class DTOUtils {
         SongDTO songDTO = new SongDTO();
         songDTO.setId(song.getId());
         songDTO.setTitle(song.getTitle());
-
+        
         songDTO.setTime(song.getTime());
         songDTO.setUrl(song.getUrl());
         //convertimos los artistas a dto
         Set<ArtistDTO> artists = song.getArtists().stream().map(this::convertToDto).collect(Collectors.toSet());
-        System.out.println(artists);
         songDTO.setArtists(artists);
         if (song.getAlbum() != null) {
             AlbumDTO albumDTO = new AlbumDTO();
             albumDTO.setId(song.getAlbum().getId());
             songDTO.setAlbum(albumDTO);
         }
+        Set<GenreDTO> genres = song.getGenreList().stream().map(this::convertToDto).collect(Collectors.toSet());
+        songDTO.setGenreList(genres);
         return songDTO;
     }
 
@@ -54,4 +56,11 @@ public class DTOUtils {
         albumDTO.setSongs(songs);
         return albumDTO;
     }
+    public GenreDTO convertToDto(Genre genre) {
+        GenreDTO genreDTO = new GenreDTO();
+        genreDTO.setId(genre.getId());
+        genreDTO.setName(genre.getName());
+        return genreDTO;
+    }
+
 }

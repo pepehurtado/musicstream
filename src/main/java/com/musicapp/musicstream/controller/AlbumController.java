@@ -71,10 +71,11 @@ public class AlbumController {
         Set<Song> existingSongs = new HashSet<>();
         if (album.getSongs() != null && !album.getSongs().isEmpty()) {
             for (Song song : album.getSongs()) {
-                // Comprobar que la canción existe
+                // Comprobar que la canción existe y si no existe, la creamos
                 Song existingSong = songRepository.findById(song.getId()).orElse(null);
                 if (existingSong == null) {
-                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("La canción con ID " + song.getId() + " no existe");
+                    //Creamos la cancion
+                    Song savedSong = songRepository.save(song);
                 }
                 existingSongs.add(existingSong);
             }

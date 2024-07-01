@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -41,6 +42,10 @@ public class Song {
     @JoinColumn(name = "album_id")
     private Album album;
 
+
+    @ManyToMany(mappedBy = "songList",cascade=CascadeType.ALL)
+    private Set<Genre> genreList = new HashSet<>();
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -62,6 +67,7 @@ public class Song {
                 ", time=" + time +
                 ", url='" + url + '\'' +
                 ", album=" + (album != null ? album.getId() : null) + // Evitar impresión completa del álbum
+                ", genreList=" + genreList +
                 '}';
     }
 }
