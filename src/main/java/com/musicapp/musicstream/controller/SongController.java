@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -224,5 +225,53 @@ public class SongController {
                                             .collect(Collectors.toList());
 
         return ResponseEntity.ok(songDTOs);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<SongDTO> patchSong(@PathVariable Integer id, @RequestBody Song songDetails) {
+        Optional<Song> songOptional = songRepository.findById(id);
+        if (!songOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Song song = songOptional.get();
+        if (songDetails.getTitle() != null) {
+            song.setTitle(songDetails.getTitle());
+        }
+        if (songDetails.getTime() != null) {
+            song.setTime(songDetails.getTime());
+        }
+        if (songDetails.getUrl() != null) {
+            song.setUrl(songDetails.getUrl());
+        }
+        if (songDetails.getAlbum() != null) {
+            Album album = albumRepository.findById(songDetails.getAlbum().getId()).get();
+            song.setAlbum(album);
+        }
+        if (songDetails.getArtists() != null) {
+            Set<Artist> artists = new HashSet<>();
+            song.getArtists().forEach(artist -> artist.removeSong(song));
+            for (Artist artist : songDetails.getArtists()) {
+                Artist artisttoadd = artistRepository.findById(artist.getId()).get();
+                artisttoadd.addSong(song);
+                artists.add(artisttoadd);
+            }
+            song.setArtists(artists);
+        }
+
+        if (songDetails.getGenreList() != null) {
+            Set<Genre> genres = new HashSet<>();
+            song.getGenreList().forEach(genre -> genre.removeSong(song));
+            for (Genre genre : songDetails.getGenreList()) {
+                Genre genretoadd = genreRepository.findById(genre.getId()).get();
+                genretoadd.addSong(song);
+                genres.add(genre);
+            }
+            song.setGenreList(genres);
+        }
+
+        Song updatedSong = songRepository.save(song);
+        SongDTO songDTO = dtoUtil.convertToDto(updatedSong);
+        return ResponseEntity.ok(songDTO);
     }
 }

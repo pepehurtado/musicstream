@@ -14,5 +14,6 @@ public class SongDTO {
     private String url;
     private Set<Integer> artists;
     private Integer album;
+    private Set<Integer> genreList;
 
 }
