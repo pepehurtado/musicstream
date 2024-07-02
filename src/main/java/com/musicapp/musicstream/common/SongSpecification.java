@@ -45,5 +45,19 @@ public class SongSpecification {
         };
     }
 
-    
+    public static Specification<Song> hasTitle(String title) {
+        return (root, query, criteriaBuilder) -> 
+        title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
+    }
+
+    public static Specification<Song> hasTime(Integer time) {
+        return (root, query, criteriaBuilder) -> 
+            time == null ? null : criteriaBuilder.equal(root.get("time"), time);
+    }
+
+    public static Specification<Song> hasUrl(String url) {
+        return (root, query, criteriaBuilder) -> 
+            url == null ? null : criteriaBuilder.equal(root.get("url"), url);
+    }
+
 }

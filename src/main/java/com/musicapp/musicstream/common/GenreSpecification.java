@@ -4,28 +4,29 @@ import java.util.List;
 
 import org.springframework.data.jpa.domain.Specification;
 
-import com.musicapp.musicstream.entities.Album;
-import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
+import com.musicapp.musicstream.entities.Genre;
+import com.musicapp.musicstream.entities.Song;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 
-public class AlbumSpecification {
+public class GenreSpecification {
 
-    public static Specification<Album> getAlbumsByFilters(List<FilterStruct.SearchCriteria> searchCriteriaList) {
+    public static Specification<Genre> getGenresByFilters(List<FilterStruct.SearchCriteria> searchCriteriaList) {
         return (root, query, criteriaBuilder) -> {
+            
             Predicate[] predicates = searchCriteriaList.stream()
                     .map(searchCriteria -> {
                         switch (searchCriteria.getOperation()) {
                             case EQUALS -> {
-                                if("artist".equals(searchCriteria.getKey())) {
-                                    Join<Album, Artist> artistJoin = root.join("artist", JoinType.INNER);
-                                    return criteriaBuilder.equal(artistJoin.get("id"), Long.valueOf(searchCriteria.getValue()));
-                                } else {
-                                    return criteriaBuilder.equal(root.get(searchCriteria.getKey()), searchCriteria.getValue());
-                                }
+                            if ("songList".equals(searchCriteria.getKey())) {
+                                Join<Genre, Song> songJoin = root.join("songList", JoinType.INNER);
+                                return criteriaBuilder.equal(songJoin.get("id"), Long.valueOf(searchCriteria.getValue()));
+                            } else {
+                                return criteriaBuilder.equal(root.get(searchCriteria.getKey()), searchCriteria.getValue());
+                            }
                     }
                             case CONTAINS -> {
                                 return criteriaBuilder.like(root.get(searchCriteria.getKey()), "%" + searchCriteria.getValue() + "%");
@@ -44,24 +45,19 @@ public class AlbumSpecification {
         };
     }
 
-    public static Specification<Album> hasTitle(String title) {
+    public static Specification<Genre> hasName(String name) {
         return (root, query, criteriaBuilder) -> 
-        title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
+        name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
 
-    public static Specification<Album> hasYear(Integer year) {
+    public static Specification<Genre> hasYear(Integer year) {
         return (root, query, criteriaBuilder) -> 
             year == null ? null : criteriaBuilder.equal(root.get("year"), year);
     }
 
-    public static Specification<Album> hasUrl(String url) {
+    public static Specification<Genre> hasDescription(String description) {
         return (root, query, criteriaBuilder) -> 
-            url == null ? null : criteriaBuilder.equal(root.get("url"), url);
-    }
-
-    public static Specification<Album> hasNumberOfSongs(Integer numberOfSongs) {
-        return (root, query, criteriaBuilder) -> 
-            numberOfSongs == null ? null : criteriaBuilder.equal(root.get("numberOfSongs"), numberOfSongs);
+            description == null ? null : criteriaBuilder.equal(root.get("description"), description);
     }
 
 }

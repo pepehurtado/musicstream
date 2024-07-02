@@ -35,4 +35,24 @@ public class ArtistSpecification {
             return criteriaBuilder.and(predicates);
         };
     }
+
+    public static Specification<Artist> hasName(String name) {
+        return (root, query, criteriaBuilder) -> 
+            name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
+    }
+
+    public static Specification<Artist> hasCountry(String country) {
+        return (root, query, criteriaBuilder) -> 
+            country == null ? null : criteriaBuilder.equal(root.get("country"), country);
+    }
+
+    public static Specification<Artist> hasAge(Integer age) {
+        return (root, query, criteriaBuilder) -> 
+            age == null ? null : criteriaBuilder.equal(root.get("age"), age);
+    }
+
+    public static Specification<Artist> hasDateOfBirth(String dateOfBirth) {
+        return (root, query, criteriaBuilder) -> 
+            dateOfBirth == null ? null : criteriaBuilder.equal(root.get("dateOfBirth"), dateOfBirth);
+    }
 }

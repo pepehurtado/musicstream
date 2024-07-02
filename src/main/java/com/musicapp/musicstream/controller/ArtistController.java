@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.ArtistSpecification;
@@ -68,11 +69,19 @@ public class ArtistController {
 
     @Operation(summary = "Get all artists")
     @GetMapping
-    public ResponseEntity<List<ArtistDTO>> getAllArtists() {
-        List<Artist> artists = (List<Artist>) artistRepository.findAll();
+    public ResponseEntity<List<ArtistDTO>> getAllArtists(@RequestParam(required = false, name = "name") String name,
+                                                         @RequestParam(required = false, name = "country") String country,
+                                                         @RequestParam(required = false, name = "age") Integer age,
+                                                         @RequestParam(required = false, name = "dateOfBirth") String dateOfBirth) {
+        Specification<Artist> spec = Specification.where(ArtistSpecification.hasName(name))
+                                                  .and(ArtistSpecification.hasCountry(country))
+                                                  .and(ArtistSpecification.hasAge(age))
+                                                  .and(ArtistSpecification.hasDateOfBirth(dateOfBirth));
+        
+        List<Artist> artists = artistRepository.findAll(spec);
         List<ArtistDTO> artistDTOs = artists.stream()
-                                             .map(dtoUtil::convertToDto)
-                                             .collect(Collectors.toList());
+                                            .map(dtoUtil::convertToDto)
+                                            .collect(Collectors.toList());
         return ResponseEntity.ok(artistDTOs);
     }
 
