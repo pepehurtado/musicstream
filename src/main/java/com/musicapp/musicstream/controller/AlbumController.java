@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -198,5 +199,60 @@ public class AlbumController {
                                             .collect(Collectors.toList());
 
         return ResponseEntity.ok(albumDTOs);
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<AlbumDTO> patchAlbum(@PathVariable Integer id, @RequestBody Album albumDetails) {
+        Optional<Album> albumOptional = albumRepository.findById(id);
+        if (!albumOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Album album = albumOptional.get();
+        if (albumDetails.getTitle() != null) {
+            album.setTitle(albumDetails.getTitle());
+        }
+        if (albumDetails.getYear() != null) {
+            album.setYear(albumDetails.getYear());
+        }
+        if (albumDetails.getDescription() != null) {
+            album.setDescription(albumDetails.getDescription());
+        }
+        if (albumDetails.getNumberOfSongs() != null) {
+            album.setNumberOfSongs(albumDetails.getNumberOfSongs());
+        }
+        if (albumDetails.getArtist() != null) {
+            album.setArtist(albumDetails.getArtist());
+        }
+        if (albumDetails.getUrl() != null) {
+            album.setUrl(albumDetails.getUrl());
+        }
+
+        if( albumDetails.getSongs()!=null){
+            //Limpiamos las canciones anteriores
+            album.getSongs().clear();
+            Set<Song> existingSongs = new HashSet<>();
+            for (Song song : albumDetails.getSongs()) {
+                // Comprobar que la canción existe
+                Song existingSong = songRepository.findByTitle(song.getTitle());
+                if (existingSong == null) {
+                    //Si no existe creamos una cancion nueva
+                    existingSong = new Song();
+                    existingSong.setTitle(song.getTitle());
+                    existingSong.setTime(song.getTime());
+                    existingSong.setUrl(song.getUrl());
+                    existingSong.setArtists(song.getArtists());
+                    existingSong.setGenreList(song.getGenreList());
+                }
+                existingSongs.add(existingSong);
+                songRepository.save(existingSong);
+            }
+            album.setSongs(existingSongs);
+            album.setNumberOfSongs(existingSongs.size());
+        }
+
+        Album updatedAlbum = albumRepository.save(album);
+        AlbumDTO albumDTO = dtoUtil.convertToDto(updatedAlbum);
+        return ResponseEntity.ok(albumDTO);
     }
 }

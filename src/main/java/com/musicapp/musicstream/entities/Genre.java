@@ -58,5 +58,9 @@ public class Genre {
     public boolean addSong(Song song) {
         return songList.add(song);
     }
+
+    public boolean removeSong(Song song) {
+        return songList.remove(song);
+    }
     
 }

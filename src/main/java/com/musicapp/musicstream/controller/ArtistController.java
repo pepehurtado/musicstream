@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,9 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.musicapp.musicstream.common.ArtistSpecification;
 import com.musicapp.musicstream.dto.ArtistDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
+import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
+import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
+import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +42,12 @@ public class ArtistController {
 
     @Autowired
     private ArtistRepository artistRepository;
+
+    @Autowired
+    private SongRepository songRepository;
+
+    @Autowired
+    private AlbumRepository albumRepository;
 
     @Autowired
     private DTOUtils dtoUtil;
@@ -140,5 +151,52 @@ public class ArtistController {
 
         return ResponseEntity.ok(artistDTOs);
     }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ArtistDTO> patchArtist(@PathVariable Integer id, @RequestBody Artist artistDetails) {
+        Optional<Artist> artistOptional = artistRepository.findById(id);
+        if (!artistOptional.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Artist artist = artistOptional.get();
+        if (artistDetails.getName() != null) {
+            artist.setName(artistDetails.getName());
+        }
+
+        if (artistDetails.getAge() != 0) {
+            artist.setAge(artistDetails.getAge());
+        }
+        
+        if (artistDetails.getCountry() != null) {
+            artist.setCountry(artistDetails.getCountry());
+        }
+        if (artistDetails.getDateOfBirth() != null) {
+            artist.setDateOfBirth(artistDetails.getDateOfBirth());
+        }
+
+        if(artistDetails.getSingleSongList()!=null) {
+            //Limpiamos las canciones anteriores
+            artist.getSingleSongList().clear();
+            for ( Song song : artistDetails.getSingleSongList()) {
+                artist.addSong(songRepository.findById(song.getId()).get());
+            }
+        }
+
+        if(artistDetails.getAlbums()!=null) {
+            //Limpiamos los álbumes anteriores
+            artist.getAlbums().clear();
+            for ( Album album : artistDetails.getAlbums()) {
+                artist.addAlbum(albumRepository.findById(album.getId()).get());
+            }
+        }
+
+        Artist updatedArtist = artistRepository.save(artist);
+        ArtistDTO artistDetailsDTO = dtoUtil.convertToDto(updatedArtist);
+        return ResponseEntity.ok(artistDetailsDTO);
+        
+    }
+    
     
 }
+

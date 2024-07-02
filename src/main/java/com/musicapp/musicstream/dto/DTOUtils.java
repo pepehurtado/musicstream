@@ -30,6 +30,9 @@ public class DTOUtils {
             albumDTO.setId(song.getAlbum().getId());
             songDTO.setAlbum(albumDTO.getId());
         }
+        //Convertimos los géneros a dto
+        Set<Integer> genreList = song.getGenreList().stream().map(Genre::getId).collect(Collectors.toSet());
+        songDTO.setGenreList(genreList);
         return songDTO;
     }
 
