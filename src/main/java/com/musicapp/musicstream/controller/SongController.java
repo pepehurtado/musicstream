@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.SongSpecification;
@@ -128,8 +129,14 @@ public class SongController {
 
     @Operation(summary = "Get all songs")
     @GetMapping
-    public ResponseEntity<List<SongDTO>> getAllSongs() {
-        List<Song> songs = (List<Song>) songRepository.findAll();
+    public ResponseEntity<List<SongDTO>> getAllSongs(@RequestParam(required = false) String title,
+                                                     @RequestParam(required = false) Integer time,
+                                                     @RequestParam(required = false) String url) {
+    Specification<Song> spec = Specification.where(SongSpecification.hasTitle(title))
+                                                  .and(SongSpecification.hasTime(time))
+                                                  .and(SongSpecification.hasUrl(url));
+
+        List<Song> songs = (List<Song>) songRepository.findAll(spec);
         List<SongDTO> songsDTO = songs.stream()
                                              .map(dtoUtil::convertToDto)
                                              .collect(Collectors.toList());

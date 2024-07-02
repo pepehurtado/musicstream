@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.AlbumSpecification;
@@ -111,8 +112,15 @@ public class AlbumController {
 
     @Operation(summary = "Get all albums")
     @GetMapping
-    public ResponseEntity<List<AlbumDTO>> getAllAlbums() {
-        List<Album> artists = (List<Album>) albumRepository.findAll();
+    public ResponseEntity<List<AlbumDTO>> getAllAlbums(@RequestParam(required = false, name = "title") String title,
+                                                       @RequestParam(required = false, name = "year") Integer year,
+                                                       @RequestParam(required = false, name = "numberOfSongs") Integer numberOfSongs,
+                                                       @RequestParam(required = false, name = "url") String url) {
+        Specification<Album> spec = Specification.where(AlbumSpecification.hasTitle(title))
+                                                    .and(AlbumSpecification.hasYear(year))
+                                                    .and(AlbumSpecification.hasUrl(url))
+                                                    .and(AlbumSpecification.hasNumberOfSongs(numberOfSongs));
+        List<Album> artists = (List<Album>) albumRepository.findAll(spec);
         List<AlbumDTO> artistDTOs = artists.stream()
                                              .map(dtoUtil::convertToDto)
                                              .collect(Collectors.toList());
