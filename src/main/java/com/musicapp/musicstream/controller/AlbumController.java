@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +31,7 @@ import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.SongRepository;
@@ -63,12 +63,12 @@ public class AlbumController {
         
         // Si ya existe un álbum con el mismo nombre no se puede crear
         if (albumRepository.findByTitle(album.getTitle()) != null) {
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe un álbum con el nombre " + album.getTitle());
+            throw new ApiRuntimeException("This album name already exists : " + album.getTitle(), 409);
         }
 
         if (album.getArtist() == null || artistRepository.findById(album.getArtist().getId()).isEmpty()) {
             // Retorna un error 412 si el artista no existe
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El artista con ID " + album.getArtist().getId() + " no existe");
+            throw new ApiRuntimeException("Artist does not exist", 412);
         }
 
         Set<Song> existingSongs = new HashSet<>();
@@ -131,6 +131,10 @@ public class AlbumController {
     @Operation(summary = "Get album by ID")
     @GetMapping("/{id}")
     public ResponseEntity<AlbumDTO> getAlbumById(@PathVariable Integer id) {
+        //Si no existe el album que devuelva un error 404
+        if (!albumRepository.existsById(id)) {
+            throw new ApiRuntimeException("Album not found with id : " + id,404);
+        }
         Optional<Album> album = albumRepository.findById(id);
         //Creamos el dto a partir del album
         AlbumDTO albumDTO = album.map(dtoUtil::convertToDto)
@@ -141,6 +145,10 @@ public class AlbumController {
     @Operation(summary = "Get album by name")
     @GetMapping("/name/{name}")
     public ResponseEntity<AlbumDTO> getAlbumByName(@PathVariable String name) {
+        if(albumRepository.findByTitle(name) == null){
+            throw new ApiRuntimeException("Album not found with name : " + name,404);
+        }
+
         Album album = albumRepository.findByTitle(name);
         AlbumDTO albumDTO = dtoUtil.convertToDto(album);
         return album != null ? ResponseEntity.ok(albumDTO) : ResponseEntity.notFound().build();
@@ -149,12 +157,14 @@ public class AlbumController {
     @Operation(summary = "Update album")
     @PutMapping("/{id}")
     public ResponseEntity<AlbumDTO> updateAlbum(@PathVariable Integer id, @RequestBody AlbumDTO albumDetailsDTO) {
-        Optional<Album> albumOptional = albumRepository.findById(id);
-        if (!albumOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+        if(albumRepository.findById(id).isEmpty()){
+            throw new ApiRuntimeException("Album not found with id : " + id,404);
+        }
+        if (albumRepository.findByTitle(albumDetailsDTO.getTitle()) != null) {
+            throw new ApiRuntimeException("This album name already exists : " + albumDetailsDTO.getTitle(), 409);
         }
 
-        Album album = albumOptional.get();
+        Album album = albumRepository.findById(id).get();
         album.setTitle(albumDetailsDTO.getTitle());
         album.setYear(albumDetailsDTO.getYear());
         album.setDescription(albumDetailsDTO.getDescription());
@@ -173,7 +183,7 @@ public class AlbumController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlbum(@PathVariable Integer id) {
         if (!albumRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ApiRuntimeException("Album not found with id : " + id,404);
         }
 
         albumRepository.deleteById(id);
@@ -213,11 +223,14 @@ public class AlbumController {
     public ResponseEntity<AlbumDTO> patchAlbum(@PathVariable Integer id, @RequestBody Album albumDetails) {
         Optional<Album> albumOptional = albumRepository.findById(id);
         if (!albumOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+            throw new ApiRuntimeException("Album not found with id : " + id,404);
         }
 
         Album album = albumOptional.get();
         if (albumDetails.getTitle() != null) {
+            if(albumRepository.findByTitle(albumDetails.getTitle()) != null){
+                throw new ApiRuntimeException("This album name already exists : " + albumDetails.getTitle(), 409);
+            }
             album.setTitle(albumDetails.getTitle());
         }
         if (albumDetails.getYear() != null) {
