@@ -12,7 +12,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +32,7 @@ import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.GenreRepository;
@@ -67,18 +67,18 @@ public class SongController {
         
         // Si ya existe una canción con el mismo nombre no se puede crear
         if (songRepository.findByTitle(song.getTitle()) != null) {
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("Ya existe una canción con el nombre " + song.getTitle());
+            throw new ApiRuntimeException("This song name already exists" + song.getTitle(), 409);
+            
         }
     
         if (song.getArtists() == null || song.getArtists().isEmpty()) {
-            // Retorna un error 400 si no se especifica ningún artista
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se ha especificado ningún artista");
+            throw new ApiRuntimeException("Artist/s are required", 400);
         }
     
         if (song.getAlbum() != null) {
             if (albumRepository.findById(song.getAlbum().getId()).isEmpty()) {
                 // Retorna un error 412 si el álbum no existe
-                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El álbum con ID " + song.getAlbum().getId() + " no existe");
+                throw new ApiRuntimeException("The album with ID " + song.getAlbum().getId() + " does not exist", 412);
             } else {
                 Album album = albumRepository.findById(song.getAlbum().getId()).get();
                 album.setNumberOfSongs(album.getSongs().size());
@@ -92,7 +92,7 @@ public class SongController {
             // Comprobar que el artista existe
             Artist existingArtist = artistRepository.findById(artist.getId()).orElse(null);
             if (existingArtist == null) {
-                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El artista con ID " + artist.getId() + " no existe");
+                throw new ApiRuntimeException("The artist with ID " + artist.getId() + " does not exist", 412);
             }
             existingArtists.add(existingArtist);
         }
@@ -102,8 +102,7 @@ public class SongController {
         for (Genre genre : song.getGenreList()) {
             Genre existingGenre = genreRepository.findById(genre.getId()).orElse(null);
             if (existingGenre == null) {
-                return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body("El género con ID " + genre.getId() + " no existe");
-            }
+                throw new ApiRuntimeException("The genre with ID " + genre.getId() + " does not exist", 412);}
             existingGenres.add(existingGenre);
         }
         song.setGenreList(existingGenres);
@@ -147,6 +146,9 @@ public class SongController {
     @Operation(summary = "Get song by ID")
     @GetMapping("/{id}")
     public ResponseEntity<SongDTO> getSongById(@PathVariable Integer id) {
+        if (!songRepository.existsById(id)) {
+            throw new ApiRuntimeException("Song not found with id : " + id, 404);
+        }
         Optional<Song> song = songRepository.findById(id);
         //Creamos el dto
         SongDTO songDTO = song.map(dtoUtil::convertToDto)
@@ -157,20 +159,21 @@ public class SongController {
     @Operation(summary = "Get song by name")
     @GetMapping("/name/{name}")
     public ResponseEntity<SongDTO> getSongByName(@PathVariable String name) {
+        if(songRepository.findByTitle(name) == null){
+            throw new ApiRuntimeException("Song not found with name : " + name, 404);
+        }
         Song song = songRepository.findByTitle(name);
         SongDTO songDTO = dtoUtil.convertToDto(song);
-        return song != null ? ResponseEntity.ok(songDTO) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(songDTO);
     }
 
     @Operation(summary = "Update song")
     @PutMapping("/{id}")
     public ResponseEntity<SongDTO> updateSong(@PathVariable Integer id, @RequestBody Song songDetails) {
-        Optional<Song> songOptional = songRepository.findById(id);
-        if (!songOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+        if (!songRepository.existsById(id)) {
+            throw new ApiRuntimeException("Song not found with id : " + id, 404);
         }
-
-        Song song = songOptional.get();
+        Song song = songRepository.findById(id).get();
         song.setTitle(songDetails.getTitle());
         song.setTime(songDetails.getTime());
         song.setAlbum(songDetails.getAlbum());
@@ -198,7 +201,7 @@ public class SongController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Integer id) {
         if (!songRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ApiRuntimeException("Song not found with id : " + id, 404);
         }
 
         songRepository.deleteById(id);
@@ -236,12 +239,11 @@ public class SongController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<SongDTO> patchSong(@PathVariable Integer id, @RequestBody Song songDetails) {
-        Optional<Song> songOptional = songRepository.findById(id);
-        if (!songOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+        
+        if (!songRepository.existsById(id)) {
+            throw new ApiRuntimeException("Song not found with id : " + id, 404);
         }
-
-        Song song = songOptional.get();
+        Song song = songRepository.findById(id).get();
         if (songDetails.getTitle() != null) {
             song.setTitle(songDetails.getTitle());
         }
