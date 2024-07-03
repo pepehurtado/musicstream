@@ -29,6 +29,7 @@ import com.musicapp.musicstream.dto.GenreDTO;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.GenreRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
@@ -55,7 +56,7 @@ public class GenreController {
     public ResponseEntity<GenreDTO> createGenre(@RequestBody Genre genreDTO) {
         // Verificar si ya existe un género con el mismo nombre
         if (genreRepository.findByName(genreDTO.getName()) != null) {
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+            throw new ApiRuntimeException("Genre already exists: " + genreDTO.getName(), 409);
         }
 
         //Crear Genre y añadir las canciones que vienen por id
@@ -67,7 +68,7 @@ public class GenreController {
             //Si no existe la cancion que devuelva un error 412
             for (Song song : genreDTO.getSongList()) {
                 if (!songRepository.existsById(song.getId())) {
-                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+                    throw new ApiRuntimeException("Song not found with id : " + song.getId(),404);
                 }
                 genre.addSong(songRepository.findById(song.getId()).get());
             }
@@ -97,19 +98,24 @@ public class GenreController {
     @Operation(summary = "Get genre by ID")
     @GetMapping("/{id}")
     public ResponseEntity<GenreDTO> getGenreById(@PathVariable Integer id) {
+        //Si no existe el genero que devuelva un error 404
+        if (!genreRepository.existsById(id)) {
+            throw new ApiRuntimeException("Genre not found with id : " + id,404);
+        }
         Optional<Genre> genre = genreRepository.findById(id);
         GenreDTO genreDTO = genre.map(dtoUtil::convertToDto)
                                 .orElse(null);
-        return genreDTO != null ? ResponseEntity.ok(genreDTO) : ResponseEntity.notFound().build();
+        return  ResponseEntity.ok(genreDTO);
     }
 
     @Operation(summary = "Update genre")
     @PutMapping("/{id}")
     public ResponseEntity<GenreDTO> updateGenre(@PathVariable Integer id, @RequestBody Genre genreDetails) {
-        Optional<Genre> genreOptional = genreRepository.findById(id);
-        if (!genreOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+        if (!genreRepository.existsById(id)) {
+            //lanzar la excepcion del manejador de excepciones
+            throw new ApiRuntimeException("Genre not found with id : " + id,404);
         }
+        Optional<Genre> genreOptional = genreRepository.findById(id);
 
         Genre genre = genreOptional.get();
         genre.setName(genreDetails.getName());
@@ -125,7 +131,7 @@ public class GenreController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGenre(@PathVariable Integer id) {
         if (!genreRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ApiRuntimeException("Genre not found with id : " + id,404);
         }
 
         genreRepository.deleteById(id);
@@ -164,10 +170,11 @@ public class GenreController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<GenreDTO> patchGenre(@PathVariable Integer id, @RequestBody Genre genreDetails) {
-        Optional<Genre> genreOptional = genreRepository.findById(id);
-        if (!genreOptional.isPresent()) {
-             return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        if (!genreRepository.existsById(id)) {
+            throw new ApiRuntimeException("Genre not found with id : " + id,404);
         }
+        Optional<Genre> genreOptional = genreRepository.findById(id);
+
 
         Genre genre = genreOptional.get();
         if (genreDetails.getName() != null) {
@@ -187,7 +194,7 @@ public class GenreController {
             for (Song song : genreDetails.getSongList()) {
                 Optional<Song> songOptional = songRepository.findById(song.getId());
                 if (!songOptional.isPresent()) {
-                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+                    throw new ApiRuntimeException("Song not found with id : " + song.getId(),412);
                 }
                 genre.addSong(songOptional.get());
             }
