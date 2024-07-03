@@ -28,6 +28,7 @@ import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.dto.GenreDTO;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Genre;
+import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.repository.GenreRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
@@ -51,15 +52,31 @@ public class GenreController {
 
     @Operation(summary = "Create a new genre")
     @PostMapping
-    public ResponseEntity<GenreDTO> createGenre(@RequestBody Genre genre) {
+    public ResponseEntity<GenreDTO> createGenre(@RequestBody Genre genreDTO) {
         // Verificar si ya existe un género con el mismo nombre
-        if (genreRepository.findByName(genre.getName()) != null) {
+        if (genreRepository.findByName(genreDTO.getName()) != null) {
             return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
         }
 
+        //Crear Genre y añadir las canciones que vienen por id
+        Genre genre = new Genre();
+        genre.setName(genreDTO.getName());
+        genre.setDescription(genreDTO.getDescription());
+        genre.setYear(genreDTO.getYear());
+        if (genreDTO.getSongList() != null) {
+            //Si no existe la cancion que devuelva un error 412
+            for (Song song : genreDTO.getSongList()) {
+                if (!songRepository.existsById(song.getId())) {
+                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+                }
+                genre.addSong(songRepository.findById(song.getId()).get());
+            }
+        }
+
+
         Genre savedGenre = genreRepository.save(genre);
-        GenreDTO genreDTO = dtoUtil.convertToDto(savedGenre);
-        return ResponseEntity.ok(genreDTO);
+        GenreDTO genreDTOResponse = dtoUtil.convertToDto(savedGenre);
+        return ResponseEntity.ok(genreDTOResponse);
     }
 
     @Operation(summary = "Get all genres")
@@ -149,7 +166,7 @@ public class GenreController {
     public ResponseEntity<GenreDTO> patchGenre(@PathVariable Integer id, @RequestBody Genre genreDetails) {
         Optional<Genre> genreOptional = genreRepository.findById(id);
         if (!genreOptional.isPresent()) {
-            return ResponseEntity.notFound().build();
+             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         Genre genre = genreOptional.get();
@@ -167,9 +184,13 @@ public class GenreController {
             //Limpiar la lista de canciones
             genre.getSongList().clear();
             //Agregar las nuevas canciones gracias al id de la cancion
-            genreDetails.getSongList().forEach(song-> {
-                genre.addSong(songRepository.findById(song.getId()).get());
-            });
+            for (Song song : genreDetails.getSongList()) {
+                Optional<Song> songOptional = songRepository.findById(song.getId());
+                if (!songOptional.isPresent()) {
+                    return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+                }
+                genre.addSong(songOptional.get());
+            }
         }
 
         Genre updatedGenre = genreRepository.save(genre);
