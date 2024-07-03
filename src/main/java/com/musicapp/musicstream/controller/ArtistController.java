@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,32 +57,47 @@ public class ArtistController {
     @Operation(summary = "Create a new artist")
     @PostMapping
     public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO artistdto) 
-{       //Creamos el artista a partir del dto
+{   //Comprobamos que no exista ese artista y validamos los campos
+        if (artistRepository.findByName(artistdto.getName()) != null) {
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+        }
+        if(artistdto.getName()==null || artistdto.getAge()==0 || artistdto.getDateOfBirth()==null){
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body(artistdto);
+        }    
+    //Creamos el artista a partir del dto
         Artist artist = new Artist();
         artist.setName(artistdto.getName());
         artist.setAge(artistdto.getAge());
         artist.setCountry(artistdto.getCountry());
         artist.setDateOfBirth(artistdto.getDateOfBirth());
         Artist savedArtist = artistRepository.save(artist);
-        artistdto.setId(savedArtist.getId());
+        //artistdto.setId(savedArtist.getId());
         return ResponseEntity.ok(artistdto);
     }
 
     @Operation(summary = "Get all artists")
     @GetMapping
-    public ResponseEntity<List<ArtistDTO>> getAllArtists(@RequestParam(required = false, name = "name") String name,
-                                                         @RequestParam(required = false, name = "country") String country,
-                                                         @RequestParam(required = false, name = "age") Integer age,
-                                                         @RequestParam(required = false, name = "dateOfBirth") String dateOfBirth) {
+    public ResponseEntity<List<ArtistDTO>> getAllArtists(
+            @RequestParam(required = false, name = "name") String name,
+            @RequestParam(required = false, name = "country") String country,
+            @RequestParam(required = false, name = "age") Integer age,
+            @RequestParam(required = false, name = "dateOfBirth") String dateOfBirth) {
+
+        // Construir la especificación combinando las condiciones basadas en los parámetros recibidos
         Specification<Artist> spec = Specification.where(ArtistSpecification.hasName(name))
-                                                  .and(ArtistSpecification.hasCountry(country))
-                                                  .and(ArtistSpecification.hasAge(age))
-                                                  .and(ArtistSpecification.hasDateOfBirth(dateOfBirth));
-        
+                .and(ArtistSpecification.hasCountry(country))
+                .and(ArtistSpecification.hasAge(age))
+                .and(ArtistSpecification.hasDateOfBirth(dateOfBirth));
+
+        // Obtener la lista de artistas según la especificación
         List<Artist> artists = artistRepository.findAll(spec);
+
+        // Convertir los artistas a DTOs
         List<ArtistDTO> artistDTOs = artists.stream()
-                                            .map(dtoUtil::convertToDto)
-                                            .collect(Collectors.toList());
+                .map(dtoUtil::convertToDto)
+                .collect(Collectors.toList());
+
+        // Devolver la respuesta HTTP con la lista de DTOs de artistas
         return ResponseEntity.ok(artistDTOs);
     }
 
@@ -117,7 +133,7 @@ public class ArtistController {
         artist.setCountry(artistDetailsDTO.getCountry());
         artist.setDateOfBirth(artistDetailsDTO.getDateOfBirth());
         Artist updatedArtist = artistRepository.save(artist);
-        artistDetailsDTO.setId(updatedArtist.getId());
+        //artistDetailsDTO.setId(updatedArtist.getId());
         return ResponseEntity.ok(artistDetailsDTO);
     }
 
