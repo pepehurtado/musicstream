@@ -10,7 +10,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +29,7 @@ import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.SongRepository;
@@ -59,10 +59,10 @@ public class ArtistController {
     public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO artistdto) 
 {   //Comprobamos que no exista ese artista y validamos los campos
         if (artistRepository.findByName(artistdto.getName()) != null) {
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build();
+            throw new ApiRuntimeException("Artist already exists: " + artistdto.getName(), 409);
         }
         if(artistdto.getName()==null || artistdto.getAge()==0 || artistdto.getDateOfBirth()==null){
-            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body(artistdto);
+            throw new ApiRuntimeException("Artist fields are not valid" + artistdto.getName() + artistdto.getAge() + artistdto.getDateOfBirth() , 412);
         }    
     //Creamos el artista a partir del dto
         Artist artist = new Artist();
@@ -104,6 +104,9 @@ public class ArtistController {
     @Operation(summary = "Get artist by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Integer id) {
+        if (!artistRepository.existsById(id)) {
+            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+        }
         Optional<Artist> artist = artistRepository.findById(id);
         //Creamos el dto a partir del artista
         ArtistDTO artistDTO = artist.map(dtoUtil::convertToDto)
@@ -116,12 +119,18 @@ public class ArtistController {
     public ResponseEntity<ArtistDTO> getArtistByName(@PathVariable String name) {
         Artist artist = artistRepository.findByName(name);
         ArtistDTO artistDTO = dtoUtil.convertToDto(artist);
-        return artist != null ? ResponseEntity.ok(artistDTO) : ResponseEntity.notFound().build();
+        if (artist == null) {
+            throw new ApiRuntimeException("Artist not found with name : " + name,404);
+        }
+        return ResponseEntity.ok(artistDTO);
     }
 
     @Operation(summary = "Update artist")
     @PutMapping("/{id}")
     public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Integer id, @RequestBody ArtistDTO artistDetailsDTO) {
+        if (!artistRepository.existsById(id)) {
+            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+        }
         Optional<Artist> artistOptional = artistRepository.findById(id);
         if (!artistOptional.isPresent()) {
             return ResponseEntity.notFound().build();
@@ -141,7 +150,7 @@ public class ArtistController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteArtist(@PathVariable Integer id) {
         if (!artistRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new ApiRuntimeException("Artist not found with id : " + id,404);
         }
 
         artistRepository.deleteById(id);
@@ -179,6 +188,9 @@ public class ArtistController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<ArtistDTO> patchArtist(@PathVariable Integer id, @RequestBody Artist artistDetails) {
+        if (!artistRepository.existsById(id)) {
+            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+        }
         Optional<Artist> artistOptional = artistRepository.findById(id);
         if (!artistOptional.isPresent()) {
             return ResponseEntity.notFound().build();
