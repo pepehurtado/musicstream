@@ -112,7 +112,7 @@ public class SongControllerTest {
         when(songRepository.findAll(any(Specification.class))).thenReturn(songs);
         when(dtoUtil.convertToDto(song)).thenReturn(songDTO);
 
-        ResponseEntity<List<SongDTO>> response = songController.getAllSongs(null,null,null);
+        ResponseEntity<List<SongDTO>> response = songController.getAllSongs(null,null,null,null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(1, response.getBody().size());
