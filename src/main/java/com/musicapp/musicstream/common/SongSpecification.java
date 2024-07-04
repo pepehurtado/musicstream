@@ -60,4 +60,9 @@ public class SongSpecification {
             url == null ? null : criteriaBuilder.equal(root.get("url"), url);
     }
 
+    public static Specification<Song> hasAlbum(Integer albumId) {
+        return (root, query, criteriaBuilder) -> 
+            albumId == null ? null : criteriaBuilder.equal(root.get("album").get("id"), albumId);
+    }
+
 }
