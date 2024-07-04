@@ -131,10 +131,13 @@ public class SongController {
     @GetMapping
     public ResponseEntity<List<SongDTO>> getAllSongs(@RequestParam(required = false) String title,
                                                      @RequestParam(required = false) Integer time,
-                                                     @RequestParam(required = false) String url) {
+                                                     @RequestParam(required = false) String url,
+                                                     @RequestParam(required = false) String album){
+    Integer albumId = albumRepository.findByTitle(album).getId();
     Specification<Song> spec = Specification.where(SongSpecification.hasTitle(title))
                                                   .and(SongSpecification.hasTime(time))
-                                                  .and(SongSpecification.hasUrl(url));
+                                                  .and(SongSpecification.hasUrl(url))
+                                                  .and(SongSpecification.hasAlbum(albumId));
 
         List<Song> songs = (List<Song>) songRepository.findAll(spec);
         List<SongDTO> songsDTO = songs.stream()
