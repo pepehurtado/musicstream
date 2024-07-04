@@ -76,7 +76,8 @@ public class GenreController {
 
         Genre savedGenre = genreRepository.save(genre);
         GenreDTO genreDTOResponse = dtoUtil.convertToDto(savedGenre);
-        return ResponseEntity.ok(genreDTOResponse);
+        //Devolver un CREATED 201
+        return ResponseEntity.status(201).body(genreDTOResponse);
     }
 
     @Operation(summary = "Get all genres")

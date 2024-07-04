@@ -82,7 +82,7 @@ public class GenreControllerTest {
         when(dtoUtil.convertToDto(any(Genre.class))).thenReturn(genreDTO);
 
         ResponseEntity<GenreDTO> response = genreController.createGenre(genre);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(genreDTO, response.getBody());
     }
 
