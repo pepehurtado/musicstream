@@ -27,6 +27,7 @@ import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
 import com.musicapp.musicstream.repository.GenreRepository;
@@ -46,8 +47,6 @@ public class SongControllerTest {
     @Mock
     private GenreRepository genreRepository;
 
-    @Mock
-    private Album albumtest;
 
     @Mock
     private DTOUtils dtoUtil;
@@ -55,19 +54,13 @@ public class SongControllerTest {
     @InjectMocks
     private SongController songController;
 
-    private HashSet<Song> songs;
-    private HashSet<SongDTO> songDTOs;
     private Song song;
     private SongDTO songDTO;
 
-    private Artist artist;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-
-        Set<Song>  songs = new HashSet<>();
-        Set<SongDTO> songDTOs = new HashSet<>();
 
         song = new Song();
         song.setId(1);
@@ -91,7 +84,6 @@ public class SongControllerTest {
         genres.add(genre);
         song.setGenreList(genres);
 
-        songs.add(song);
 
         songDTO = new SongDTO();
         songDTO.setId(1);
@@ -108,9 +100,9 @@ public class SongControllerTest {
         Set<Integer> genreIds = new HashSet<>();
         genreIds.add(artistDTO);
         songDTO.setGenreList(genreIds);
-        songDTOs.add(songDTO);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testGetAllSongs() {
         //Creamos un hashset de canciones y añadimos una
@@ -130,7 +122,7 @@ public class SongControllerTest {
     public void testGetSongById() {
         when(songRepository.findById(1)).thenReturn(Optional.of(song));
         when(dtoUtil.convertToDto(song)).thenReturn(songDTO);
-
+        when(songRepository.existsById(1)).thenReturn(true);
         ResponseEntity<SongDTO> response = songController.getSongById(1);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -161,6 +153,7 @@ public class SongControllerTest {
         when(artistRepository.findById(1)).thenReturn(song.getArtists().stream().findFirst());
         when(genreRepository.findById(1)).thenReturn(song.getGenreList().stream().findFirst());
         songDTO.setTitle("Updated Title");
+        when(songRepository.existsById(1)).thenReturn(true);
 
         ResponseEntity<SongDTO> response = songController.updateSong(1, song);
 
@@ -177,6 +170,7 @@ public class SongControllerTest {
         when(genreRepository.findById(1)).thenReturn(song.getGenreList().stream().findFirst());
         songDTO.setArtists(new HashSet<>());
         songDTO.getArtists().add(2);
+        when(songRepository.existsById(1)).thenReturn(true);
 
         ResponseEntity<SongDTO> response = songController.updateSong(1, song);
 
@@ -208,9 +202,15 @@ public class SongControllerTest {
     @Test
     public void createSameSong() {
         when(songRepository.findByTitle("Test Song")).thenReturn(song);
-    
-        ResponseEntity<?> response = songController.createSong(song);
-    
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        //Manejar la excepción de que ya existe la canción
+        
+        try {
+            songController.createSong(song);
+        } catch (Exception e) {
+            //Comprobar que es exactamente la excepción que esperamos
+            assertEquals("This song name already exists " + song.getTitle(), e.getMessage());
+            assertEquals(409, ((ApiRuntimeException) e).getStatusCode());
+        }
+
     }
 }

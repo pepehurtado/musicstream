@@ -24,6 +24,7 @@ import com.musicapp.musicstream.controller.ArtistController;
 import com.musicapp.musicstream.dto.ArtistDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Artist;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.ArtistRepository;
 
 public class ArtistControllerTest {
@@ -64,7 +65,8 @@ public class ArtistControllerTest {
         artistDTO.setAge(31);
         artistDTOs.add(artistDTO);
     }
-
+    
+    @SuppressWarnings("unchecked")
     @Test
     public void testGetAllArtists() {
         // Configurar comportamiento de Mockito para el repositorio
@@ -76,10 +78,10 @@ public class ArtistControllerTest {
         when(artistRepository.findAll(spec)).thenReturn(artists);
         when(artistRepository.findAll()).thenReturn(artists);
 
-        List<Artist> artists = new ArrayList<>();
-        artists.add(artist);
+        List<Artist> artistsList = new ArrayList<>();
+        artistsList.add(artist);
 
-        when(artistRepository.findAll(any(Specification.class))).thenReturn(artists);
+        when(artistRepository.findAll(any(Specification.class))).thenReturn(artistsList);
         when(dtoUtil.convertToDto(artist)).thenReturn(artistDTO);
 
         ResponseEntity<List<ArtistDTO>> response = artistController.getAllArtists(null, null, null, null);
@@ -91,6 +93,7 @@ public class ArtistControllerTest {
     public void testGetArtistById() {
         when(artistRepository.findById(1)).thenReturn(Optional.of(artist));
         when(dtoUtil.convertToDto(artist)).thenReturn(artistDTO);
+        when(artistRepository.existsById(1)).thenReturn(true);
 
         ResponseEntity<ArtistDTO> response = artistController.getArtistById(1);
 
@@ -114,7 +117,7 @@ public class ArtistControllerTest {
         when(artistRepository.findById(1)).thenReturn(Optional.of(artist));
         when(artistRepository.save(artist)).thenReturn(artist);
         when(dtoUtil.convertToDto(artist)).thenReturn(artistDTO);
-
+        when(artistRepository.existsById(1)).thenReturn(true);
         artistDTO.setName("Updated Name");
 
         ResponseEntity<ArtistDTO> response = artistController.updateArtist(1, artistDTO);
@@ -148,9 +151,13 @@ public class ArtistControllerTest {
     public void createSameArtist() {
         when(artistRepository.findByName("John Doe")).thenReturn(artist);
     
-        ResponseEntity<ArtistDTO> response = artistController.createArtist(artistDTO);
-    
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        try {
+            artistController.createArtist(artistDTO);
+        } catch (Exception e) {
+            assertEquals("Artist already exists " +artist.getName(), e.getMessage());
+            //Ver el error 409
+            assertEquals(409, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
     
 }

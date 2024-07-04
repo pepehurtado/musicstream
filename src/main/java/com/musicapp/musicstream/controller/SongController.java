@@ -67,18 +67,18 @@ public class SongController {
         
         // Si ya existe una canción con el mismo nombre no se puede crear
         if (songRepository.findByTitle(song.getTitle()) != null) {
-            throw new ApiRuntimeException("This song name already exists" + song.getTitle(), 409);
+            throw new ApiRuntimeException("This song name already exists " + song.getTitle(), 409);
             
         }
     
         if (song.getArtists() == null || song.getArtists().isEmpty()) {
-            throw new ApiRuntimeException("Artist/s are required", 400);
+            throw new ApiRuntimeException("Artist/s are required ", 400);
         }
     
         if (song.getAlbum() != null) {
             if (albumRepository.findById(song.getAlbum().getId()).isEmpty()) {
                 // Retorna un error 412 si el álbum no existe
-                throw new ApiRuntimeException("The album with ID " + song.getAlbum().getId() + " does not exist", 412);
+                throw new ApiRuntimeException("The album with ID " + song.getAlbum().getId() + " does not exist ", 412);
             } else {
                 Album album = albumRepository.findById(song.getAlbum().getId()).get();
                 album.setNumberOfSongs(album.getSongs().size());

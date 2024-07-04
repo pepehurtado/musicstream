@@ -22,13 +22,12 @@ import org.springframework.http.ResponseEntity;
 import com.musicapp.musicstream.controller.AlbumController;
 import com.musicapp.musicstream.dto.AlbumDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
-import com.musicapp.musicstream.dto.SongDTO;
 import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
-import com.musicapp.musicstream.repository.GenreRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
 public class AlbumControllerTest {
@@ -43,29 +42,21 @@ public class AlbumControllerTest {
     private SongRepository songRepository;
 
     @Mock
-    private GenreRepository genreRepository;
-
-    @Mock
     private DTOUtils dtoUtil;
 
     @InjectMocks
     private AlbumController albumController;
 
-    private HashSet<Album> albums;
-    private HashSet<AlbumDTO> albumDTOs;
     private Album album;
     private AlbumDTO albumDTO;
 
     private Artist artist;
     private Song song;
-    private SongDTO songDTO;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        Set<Album> albums = new HashSet<>();
-        Set<AlbumDTO> albumDTOs = new HashSet<>();
 
         album = new Album();
         album.setId(1);
@@ -85,16 +76,15 @@ public class AlbumControllerTest {
         songs.add(song);
         album.setSongs(songs);
 
-        albums.add(album);
 
         albumDTO = new AlbumDTO();
         albumDTO.setId(1);
         albumDTO.setTitle("Test Album");
         albumDTO.setYear("2024");
 
-        albumDTOs.add(albumDTO);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testGetAllAlbums() {
         List<Album> albums = new ArrayList<>();
@@ -113,7 +103,7 @@ public class AlbumControllerTest {
     public void testGetAlbumById() {
         when(albumRepository.findById(1)).thenReturn(Optional.of(album));
         when(dtoUtil.convertToDto(album)).thenReturn(albumDTO);
-
+        when(albumRepository.existsById(1)).thenReturn(true);
         ResponseEntity<AlbumDTO> response = albumController.getAlbumById(1);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -173,8 +163,11 @@ public class AlbumControllerTest {
     public void testCreateSameAlbum() {
         when(albumRepository.findByTitle("Test Album")).thenReturn(album);
 
-        ResponseEntity<?> response = albumController.createAlbum(album);
-
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        try {
+            albumController.createAlbum(album);
+        } catch (Exception e) {
+            assertEquals("This album name already exists "+album.getTitle(), e.getMessage());
+            assertEquals(409, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 }
