@@ -59,10 +59,10 @@ public class ArtistController {
     public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO artistdto) 
 {   //Comprobamos que no exista ese artista y validamos los campos
         if (artistRepository.findByName(artistdto.getName()) != null) {
-            throw new ApiRuntimeException("Artist already exists: " + artistdto.getName(), 409);
+            throw new ApiRuntimeException("Artist already exists " + artistdto.getName(), 409);
         }
         if(artistdto.getName()==null || artistdto.getAge()==0 || artistdto.getDateOfBirth()==null){
-            throw new ApiRuntimeException("Artist fields are not valid" + artistdto.getName() + artistdto.getAge() + artistdto.getDateOfBirth() , 412);
+            throw new ApiRuntimeException("Artist fields are not valid " + artistdto.getName() + artistdto.getAge() + artistdto.getDateOfBirth() , 412);
         }    
     //Creamos el artista a partir del dto
         Artist artist = new Artist();
@@ -70,8 +70,7 @@ public class ArtistController {
         artist.setAge(artistdto.getAge());
         artist.setCountry(artistdto.getCountry());
         artist.setDateOfBirth(artistdto.getDateOfBirth());
-        Artist savedArtist = artistRepository.save(artist);
-        //artistdto.setId(savedArtist.getId());
+        artistRepository.save(artist);
         return ResponseEntity.ok(artistdto);
     }
 
@@ -105,7 +104,7 @@ public class ArtistController {
     @GetMapping("/{id}")
     public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Integer id) {
         if (!artistRepository.existsById(id)) {
-            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+            throw new ApiRuntimeException("Artist not found with id " + id,404);
         }
         Optional<Artist> artist = artistRepository.findById(id);
         //Creamos el dto a partir del artista
@@ -129,7 +128,7 @@ public class ArtistController {
     @PutMapping("/{id}")
     public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Integer id, @RequestBody ArtistDTO artistDetailsDTO) {
         if (!artistRepository.existsById(id)) {
-            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+            throw new ApiRuntimeException("Artist not found with id " + id,404);
         }
         Optional<Artist> artistOptional = artistRepository.findById(id);
         if (!artistOptional.isPresent()) {
@@ -141,8 +140,7 @@ public class ArtistController {
         artist.setAge(artistDetailsDTO.getAge());
         artist.setCountry(artistDetailsDTO.getCountry());
         artist.setDateOfBirth(artistDetailsDTO.getDateOfBirth());
-        Artist updatedArtist = artistRepository.save(artist);
-        //artistDetailsDTO.setId(updatedArtist.getId());
+        artistRepository.save(artist);
         return ResponseEntity.ok(artistDetailsDTO);
     }
 
@@ -150,7 +148,7 @@ public class ArtistController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteArtist(@PathVariable Integer id) {
         if (!artistRepository.existsById(id)) {
-            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+            throw new ApiRuntimeException("Artist not found with id " + id,404);
         }
 
         artistRepository.deleteById(id);
@@ -189,7 +187,7 @@ public class ArtistController {
     @PatchMapping("/{id}")
     public ResponseEntity<ArtistDTO> patchArtist(@PathVariable Integer id, @RequestBody Artist artistDetails) {
         if (!artistRepository.existsById(id)) {
-            throw new ApiRuntimeException("Artist not found with id : " + id,404);
+            throw new ApiRuntimeException("Artist not found with id " + id,404);
         }
         Optional<Artist> artistOptional = artistRepository.findById(id);
         if (!artistOptional.isPresent()) {

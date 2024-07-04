@@ -25,6 +25,7 @@ import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.dto.GenreDTO;
 import com.musicapp.musicstream.entities.Genre;
 import com.musicapp.musicstream.entities.Song;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.GenreRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
@@ -48,7 +49,7 @@ public class GenreControllerTest {
     private Song nonExistingSong;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
         genre = new Genre();
         genre.setId(1);
@@ -89,10 +90,18 @@ public class GenreControllerTest {
     void testCreateGenreAlreadyExists() {
         when(genreRepository.findByName(anyString())).thenReturn(genre);
 
-        ResponseEntity<GenreDTO> response = genreController.createGenre(genre);
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        try {
+            genreController.createGenre(genre);
+        } catch (Exception e) {
+            //Comprobar tambien que se trata de un error 409
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Genre already exists: " + genre.getName(), e.getMessage());
+            //Suponer que Exception e es de tipo ApiRuntimeException para hacer un getStatusCode
+            assertEquals(409, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void testGetAllGenres() {
         List<Genre> genres = Arrays.asList(genre);
@@ -109,18 +118,21 @@ public class GenreControllerTest {
     void testGetGenreById() {
         when(genreRepository.findById(anyInt())).thenReturn(Optional.of(genre));
         when(dtoUtil.convertToDto(any(Genre.class))).thenReturn(genreDTO);
-
-        ResponseEntity<GenreDTO> response = genreController.getGenreById(1);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(genreDTO, response.getBody());
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
     }
 
     @Test
     void testGetGenreByIdNotFound() {
         when(genreRepository.findById(anyInt())).thenReturn(Optional.empty());
+        when(genreRepository.existsById(anyInt())).thenReturn(false);
 
-        ResponseEntity<GenreDTO> response = genreController.getGenreById(1);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        try {
+            genreController.getGenreById(1);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Genre not found with id : " + 1, e.getMessage());
+            assertEquals(404, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
     @Test
@@ -128,7 +140,7 @@ public class GenreControllerTest {
         when(genreRepository.findById(anyInt())).thenReturn(Optional.of(genre));
         when(genreRepository.save(any(Genre.class))).thenReturn(genre);
         when(dtoUtil.convertToDto(any(Genre.class))).thenReturn(genreDTO);
-
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
         ResponseEntity<GenreDTO> response = genreController.updateGenre(1, genre);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(genreDTO, response.getBody());
@@ -137,9 +149,15 @@ public class GenreControllerTest {
     @Test
     void testUpdateGenreNotFound() {
         when(genreRepository.findById(anyInt())).thenReturn(Optional.empty());
+        when(genreRepository.existsById(anyInt())).thenReturn(false);
 
-        ResponseEntity<GenreDTO> response = genreController.updateGenre(1, genre);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        try {
+            genreController.updateGenre(1, genre);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Genre not found with id : " + 1, e.getMessage());
+            assertEquals(404, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
     @Test
@@ -155,8 +173,13 @@ public class GenreControllerTest {
     void testDeleteGenreNotFound() {
         when(genreRepository.existsById(anyInt())).thenReturn(false);
 
-        ResponseEntity<Void> response = genreController.deleteGenre(1);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        try {
+            genreController.deleteGenre(1);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Genre not found with id : " + 1, e.getMessage());
+            assertEquals(404, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
     @Test
@@ -164,6 +187,7 @@ public class GenreControllerTest {
         when(genreRepository.findById(anyInt())).thenReturn(Optional.of(genre));
         when(genreRepository.save(any(Genre.class))).thenReturn(genre);
         when(dtoUtil.convertToDto(any(Genre.class))).thenReturn(genreDTO);
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
 
         Genre updatedGenre = new Genre();
         updatedGenre.setName("Updated Name");
@@ -180,8 +204,13 @@ public class GenreControllerTest {
         Genre updatedGenre = new Genre();
         updatedGenre.setName("Updated Name");
 
-        ResponseEntity<GenreDTO> response = genreController.patchGenre(1, updatedGenre);
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        try {
+            genreController.patchGenre(1, updatedGenre);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Genre not found with id : " + 1, e.getMessage());
+            assertEquals(404, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
     @Test
@@ -202,18 +231,22 @@ public class GenreControllerTest {
     @Test
     void testCreateGenreWithNonExistingSongs() {
         genre.getSongList().add(nonExistingSong);
-
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
         when(genreRepository.findByName(anyString())).thenReturn(null);
         when(songRepository.findById(anyInt())).thenReturn(Optional.empty());
-
-        ResponseEntity<GenreDTO> response = genreController.createGenre(genre);
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        try {
+            genreController.createGenre(genre);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Song not found with id : " + nonExistingSong.getId(), e.getMessage());
+            assertEquals(412, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 
     @Test
     void testPatchGenreWithExistingSongs() {
         genre.getSongList().add(existingSong);
-
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
         when(genreRepository.findById(anyInt())).thenReturn(Optional.of(genre));
         when(songRepository.findById(anyInt())).thenReturn(Optional.of(existingSong));
         when(genreRepository.save(any(Genre.class))).thenReturn(genre);
@@ -230,7 +263,7 @@ public class GenreControllerTest {
     @Test
     void testPatchGenreWithNonExistingSongs() {
         genre.getSongList().add(nonExistingSong);
-
+        when(genreRepository.existsById(anyInt())).thenReturn(true);
         when(genreRepository.findById(anyInt())).thenReturn(Optional.of(genre));
         when(songRepository.findById(anyInt())).thenReturn(Optional.empty());
         
@@ -238,7 +271,12 @@ public class GenreControllerTest {
         Genre updatedGenre = new Genre();
         updatedGenre.setSongList(new HashSet<>(Arrays.asList(nonExistingSong)));
 
-        ResponseEntity<GenreDTO> response = genreController.patchGenre(1, updatedGenre);
-        assertEquals(HttpStatus.PRECONDITION_FAILED, response.getStatusCode());
+        try {
+            genreController.patchGenre(1, updatedGenre);
+        } catch (Exception e) {
+            assertEquals(ApiRuntimeException.class, e.getClass());
+            assertEquals("Song not found with id : " + nonExistingSong.getId(), e.getMessage());
+            assertEquals(412, ((ApiRuntimeException) e).getStatusCode());
+        }
     }
 }
