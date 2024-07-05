@@ -44,20 +44,27 @@ public class Artist {
         joinColumns = { @JoinColumn(name = "artist_id") },
         inverseJoinColumns = { @JoinColumn(name = "song_id") }
     )
-    private Set<Song> singleSongList = new HashSet<>();
+    private Set<Song> singleSongList;
 
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)
-    private Set<Album> albums = new HashSet<>();
+    private Set<Album> albums;
 
     public boolean addSong(Song song) {
+        if (singleSongList == null) {
+            singleSongList = new HashSet<>();
+        }
         return singleSongList.add(song);
     }
 
     public boolean removeSong(Song song) {
+        
         return singleSongList.remove(song);
     }
 
     public boolean addAlbum(Album album) {
+        if (albums == null) {
+            albums = new HashSet<>();
+        }
         return albums.add(album);
     }
 

@@ -1,7 +1,9 @@
 package com.musicapp.musicstream.controller;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,23 +58,87 @@ public class ArtistController {
 
     @Operation(summary = "Create a new artist")
     @PostMapping
-    public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO artistdto) 
-{   //Comprobamos que no exista ese artista y validamos los campos
-        if (artistRepository.findByName(artistdto.getName()) != null) {
-            throw new ApiRuntimeException("Artist already exists " + artistdto.getName(), 409);
+    public ResponseEntity<ArtistDTO> createArtist(@RequestBody Artist artistToCreate) {
+        // Comprobamos que no exista ese artista y validamos los campos
+        if (artistRepository.findByName(artistToCreate.getName()) != null) {
+            throw new ApiRuntimeException("Artist already exists " + artistToCreate.getName(), 409);
         }
-        if(artistdto.getName()==null || artistdto.getAge()==0 || artistdto.getDateOfBirth()==null){
-            throw new ApiRuntimeException("Artist fields are not valid " + artistdto.getName() + artistdto.getAge() + artistdto.getDateOfBirth() , 412);
-        }    
-    //Creamos el artista a partir del dto
+        if (artistToCreate.getName() == null || artistToCreate.getAge() == 0 || artistToCreate.getDateOfBirth() == null) {
+            throw new ApiRuntimeException("Artist fields are not valid " + artistToCreate.getName() + artistToCreate.getAge() + artistToCreate.getDateOfBirth(), 412);
+        }
+    
+        // Creamos el artista a partir del dto
         Artist artist = new Artist();
-        artist.setName(artistdto.getName());
-        artist.setAge(artistdto.getAge());
-        artist.setCountry(artistdto.getCountry());
-        artist.setDateOfBirth(artistdto.getDateOfBirth());
-        artistRepository.save(artist);
-        return ResponseEntity.ok(artistdto);
+        artist.setName(artistToCreate.getName());
+        artist.setAge(artistToCreate.getAge());
+        artist.setCountry(artistToCreate.getCountry());
+        artist.setDateOfBirth(artistToCreate.getDateOfBirth());
+    
+        Artist savedArtista = artistRepository.save(artist);
+        Set<Artist> artists = new HashSet<>();
+        artists.add(savedArtista);
+        if (artistToCreate.getSingleSongList() != null) {
+            for (Song song : artistToCreate.getSingleSongList()) {
+                Song existingSong = songRepository.findByTitle(song.getTitle());
+                if (existingSong == null) {
+                    if (song.getTime() == null) {
+                        throw new ApiRuntimeException("Can't create song " + song.getTitle() + " because time is null", 412);
+                    }
+                    song.setArtists(artists);
+                    songRepository.save(song);
+                    savedArtista.addSong(song);
+                    artistRepository.save(savedArtista);
+
+                } else {
+                    //Añadir el artista al set de artistas del song
+                    existingSong.getArtists().add(savedArtista);
+                    songRepository.save(existingSong);
+                    //savedArtista.addSong(song);
+                    //artistRepository.save(savedArtista);
+                }
+            }
+        }
+    
+   
+        if (artistToCreate.getAlbums() != null) {
+            for (Album album : artistToCreate.getAlbums()) {
+                Album existingAlbum = albumRepository.findByTitle(album.getTitle());
+                if (existingAlbum == null) {
+                    if (album.getYear() == null) {
+                        throw new ApiRuntimeException("Can't create album " + album.getTitle() + " because year is null", 412);
+                    }
+                    album.setArtist(savedArtista);
+                    existingAlbum = albumRepository.save(album);
+                }
+                savedArtista.addAlbum(existingAlbum);
+                    for (Song song : album.getSongs()) {
+                        Song existingSong = songRepository.findByTitle(song.getTitle());
+                        if (existingSong == null) {
+                            if (song.getTime() == null) {
+                                throw new ApiRuntimeException("Can't create song " + song.getTitle() + " because time is null", 412);
+                            }
+                            song.setAlbum(existingAlbum);
+                            existingSong = songRepository.save(song);
+                        } else {
+                            existingSong.setAlbum(existingAlbum);
+                        }
+                        savedArtista.addSong(existingSong);
+                        existingAlbum.addSong(existingSong);
+                        //Actualiza el number of songs del album
+                        existingAlbum.setNumberOfSongs(existingAlbum.getSongs().size());
+                        albumRepository.save(existingAlbum);
+                }
+            }
+        }
+    
+        artistRepository.save(savedArtista);
+    
+        return ResponseEntity.ok(dtoUtil.convertToDto(savedArtista));
     }
+    
+
+    
+
 
     @Operation(summary = "Get all artists")
     @GetMapping

@@ -44,8 +44,9 @@ public class DTOUtils {
         artistDTO.setCountry(artist.getCountry());
         artistDTO.setAge(artist.getAge());
         //Convertimos las canciones a dto
+        if (artist.getSingleSongList() != null) {
         Set<SongDTO> singleSongList = artist.getSingleSongList().stream().map(this::convertToDto).collect(Collectors.toSet());
-        artistDTO.setSingleSongList(singleSongList);
+        artistDTO.setSingleSongList(singleSongList);}
         //Convertimos los álbumes a dto
         Set<AlbumDTO> albumList = artist.getAlbums().stream().map(this::convertToDto).collect(Collectors.toSet());
         artistDTO.setAlbumList(albumList);
