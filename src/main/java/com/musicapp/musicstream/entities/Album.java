@@ -1,5 +1,6 @@
 package com.musicapp.musicstream.entities;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -44,6 +45,20 @@ public class Album {
     
     @OneToMany(mappedBy = "album")
     private Set<Song> songs;
+
+
+    public void addSong(Song song) {
+        if (songs == null) {
+            songs = new HashSet<>();
+        }
+        songs.add(song);
+        song.setAlbum(this);
+    }
+
+    public void removeSong(Song song) {
+        songs.remove(song);
+        song.setAlbum(null);
+    }
 
     @Override
     public boolean equals(Object o) {

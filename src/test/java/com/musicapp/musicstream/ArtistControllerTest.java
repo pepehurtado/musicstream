@@ -105,7 +105,7 @@ public class ArtistControllerTest {
     public void testCreateArtist() {
         when(artistRepository.findByName("John Doe")).thenReturn(null);
 
-        ResponseEntity<ArtistDTO> response = artistController.createArtist(artistDTO);
+        ResponseEntity<ArtistDTO> response = artistController.createArtist(artist);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -152,7 +152,7 @@ public class ArtistControllerTest {
         when(artistRepository.findByName("John Doe")).thenReturn(artist);
     
         try {
-            artistController.createArtist(artistDTO);
+            artistController.createArtist(artist);
         } catch (Exception e) {
             assertEquals("Artist already exists " +artist.getName(), e.getMessage());
             //Ver el error 409
