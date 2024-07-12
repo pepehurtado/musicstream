@@ -48,8 +48,10 @@ public class DTOUtils {
         Set<SongDTO> singleSongList = artist.getSingleSongList().stream().map(this::convertToDto).collect(Collectors.toSet());
         artistDTO.setSingleSongList(singleSongList);}
         //Convertimos los álbumes a dto
+        if (artist.getAlbums() != null) {
         Set<AlbumDTO> albumList = artist.getAlbums().stream().map(this::convertToDto).collect(Collectors.toSet());
         artistDTO.setAlbumList(albumList);
+        }
         return artistDTO;
     }
 
@@ -71,8 +73,12 @@ public class DTOUtils {
         GenreDTO genreDTO = new GenreDTO();
         genreDTO.setId(genre.getId());
         genreDTO.setName(genre.getName());
+        genreDTO.setDescription(genre.getDescription());
+        genreDTO.setYear(genre.getYear());
+        if(genre.getSongList() != null) {
         Set<Integer> songs = genre.getSongList().stream().map(Song::getId).collect(Collectors.toSet());
         genreDTO.setSongList(songs);
+        }
         return genreDTO;
     }
 

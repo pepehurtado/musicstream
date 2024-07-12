@@ -133,7 +133,16 @@ public class SongController {
                                                      @RequestParam(required = false) Integer time,
                                                      @RequestParam(required = false) String url,
                                                      @RequestParam(required = false) String album){
-    Integer albumId = albumRepository.findByTitle(album).getId();
+                                                        //Get the album id or null
+                                                        Integer albumId = null;
+                                                        if(album != null){
+                                                            if(albumRepository.findByTitle(album) == null){
+                                                                throw new ApiRuntimeException("Album not found with title : " + album, 404);
+                                                            }
+                                                            else{ albumId = albumRepository.findByTitle(album).getId();
+                                                            }
+                                                        }
+                                                                
     Specification<Song> spec = Specification.where(SongSpecification.hasTitle(title))
                                                   .and(SongSpecification.hasTime(time))
                                                   .and(SongSpecification.hasUrl(url))
