@@ -10,7 +10,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiRuntimeException.class)
     public ResponseEntity<ApiError> handleApiRuntimeException(ApiRuntimeException ex) {
-        ApiError apiError = new ApiError("error", ex.getStatusCode(), ex.getMessage());
+        ApiError apiError = new ApiError(ex.getErrorType(), ex.getStatusCode(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.valueOf(ex.getStatusCode())).body(apiError);
     }
 }

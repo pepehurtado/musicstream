@@ -65,8 +65,10 @@ public class DTOUtils {
         albumDTO.setNumberOfSongs(album.getNumberOfSongs());
         albumDTO.setUrl(album.getUrl());
         //Guardarm los ids de las canciones
+        if (album.getSongs() != null) {
         Set<Integer> songs = album.getSongs().stream().map(Song::getId).collect(Collectors.toSet());
         albumDTO.setSongs(songs);
+        }
         return albumDTO;
     }
     public GenreDTO convertToDto(Genre genre) {

@@ -84,6 +84,7 @@ public class ArtistController {
                     if (song.getTime() == null) {
                         throw new ApiRuntimeException("Can't create song " + song.getTitle() + " because time is null", 412);
                     }
+                    song.setId(null);
                     song.setArtists(artists);
                     songRepository.save(song);
                     savedArtista.addSong(song);
@@ -111,6 +112,7 @@ public class ArtistController {
                     existingAlbum = albumRepository.save(album);
                 }
                 savedArtista.addAlbum(existingAlbum);
+                if (album.getSongs() != null) {
                     for (Song song : album.getSongs()) {
                         Song existingSong = songRepository.findByTitle(song.getTitle());
                         if (existingSong == null) {
@@ -128,6 +130,7 @@ public class ArtistController {
                         existingAlbum.setNumberOfSongs(existingAlbum.getSongs().size());
                         albumRepository.save(existingAlbum);
                 }
+            }
             }
         }
     
