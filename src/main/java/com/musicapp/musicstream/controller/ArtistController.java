@@ -242,6 +242,13 @@ public class ArtistController {
         Pageable pageable = PageRequest.of(struct.getPage().getPageIndex(), struct.getPage().getPageSize(), sort);
 
         // Construir la especificación a partir de los criterios de búsqueda
+        if (struct.getListSearchCriteria() == null) {
+            Page<Artist> artists = artistRepository.findAll(pageable);
+            List<ArtistDTO> artistDTOs = artists.stream()
+                                                .map(dtoUtil::convertToDto)
+                                                .collect(Collectors.toList());
+            return ResponseEntity.ok(artistDTOs);
+        }
         Specification<Artist> specification = ArtistSpecification.getArtistsByFilters(struct.getListSearchCriteria());
 
         // Realizar la consulta con el repositorio utilizando Pageable y Specification
