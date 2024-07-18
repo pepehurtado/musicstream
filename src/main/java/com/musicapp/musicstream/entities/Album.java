@@ -42,7 +42,6 @@ public class Album {
 
     private String url;
 
-    
     @OneToMany(mappedBy = "album")
     private Set<Song> songs;
 

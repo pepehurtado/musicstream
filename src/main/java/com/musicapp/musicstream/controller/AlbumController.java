@@ -187,6 +187,12 @@ public class AlbumController {
         if (!albumRepository.existsById(id)) {
             throw new ApiRuntimeException("Album not found with id " + id,404);
         }
+        //Por cada cancion, eliminar la relacion con el album
+        Album album = albumRepository.findById(id).get();
+        for (Song song : album.getSongs()) {
+            song.setAlbum(null);
+            songRepository.save(song);
+        }
 
         albumRepository.deleteById(id);
         return ResponseEntity.noContent().build();

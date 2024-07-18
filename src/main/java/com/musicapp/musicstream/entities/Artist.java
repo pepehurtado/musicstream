@@ -38,7 +38,7 @@ public class Artist {
 
     private int age;
 
-    @ManyToMany(cascade=CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "song_artist",
         joinColumns = { @JoinColumn(name = "artist_id") },

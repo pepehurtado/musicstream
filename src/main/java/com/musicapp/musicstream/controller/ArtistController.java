@@ -219,11 +219,26 @@ public class ArtistController {
     @Operation(summary = "Delete artist")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteArtist(@PathVariable Integer id) {
-        if (!artistRepository.existsById(id)) {
-            throw new ApiRuntimeException("Artist not found with id " + id,404);
+        Optional<Artist> artistOptional = artistRepository.findById(id);
+        if (!artistOptional.isPresent()) {
+            throw new ApiRuntimeException("Artist not found with id " + id, 404);
         }
-
-        artistRepository.deleteById(id);
+    
+        Artist artist = artistOptional.get();
+    
+        // Eliminar asociaciones con canciones
+        for (Song song : artist.getSingleSongList()) {
+            song.getArtists().remove(artist);
+            songRepository.save(song);
+        }
+    
+        // Eliminar asociaciones con álbumes
+        for (Album album : artist.getAlbums()) {
+            album.setArtist(null);
+            albumRepository.save(album);
+        }
+    
+        artistRepository.delete(artist);
         return ResponseEntity.noContent().build();
     }
 

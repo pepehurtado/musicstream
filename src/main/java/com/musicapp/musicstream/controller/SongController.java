@@ -216,7 +216,14 @@ public class SongController {
         if (!songRepository.existsById(id)) {
             throw new ApiRuntimeException("Song not found with id : " + id, 404);
         }
-
+        //Eliminar la relacion con los artistas
+        Song song = songRepository.findById(id).get();
+        for (Artist artist : song.getArtists()) {
+            Artist artistaforid = artistRepository.findById(artist.getId()).orElse(null);
+            artistaforid.removeSong(song);
+            artistRepository.save(artistaforid);
+        }
+        
         songRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
