@@ -110,6 +110,7 @@ public class ArtistController {
                     if (album.getYear() == null) {
                         throw new ApiRuntimeException("Can't create album " + album.getTitle() + " because year is null", 412);
                     }
+                    album.setId(null);
                     album.setArtist(savedArtista);
                     existingAlbum = albumRepository.save(album);
                 }

@@ -1,0 +1,21 @@
+{
+    "id": 0,
+    "name": "Artist Examplee",
+    "dateOfBirth": "2024-07-18T07:05:47.367Z",
+    "country": "Sample",
+    "age": 30,
+    "singleSongList": [
+      {
+        "id": 0,
+        "title": "Yo perreo sola",
+        "time": 200,
+        "url": "string-solaaa"
+  
+  },
+  {
+        "id": 2,
+        "title": "Yo perreo con dios",
+        "time": 200,
+        "url": "string-diosss"
+  }]}
+  

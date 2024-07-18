@@ -1,0 +1,51 @@
+{
+    "id": 0,
+    "name": "Paco de Luc",
+    "dateOfBirth": "2024-07-18T07:13:52.854Z",
+    "country": "España",
+    "age": 30,
+    "albums": [
+      {
+        "id": 0,
+        "title": "Nadie sabe",
+        "year": "2020",
+        "description": "Nadie sabe mami",
+        "url": "url-nadie-sabe",
+        "songs":  [
+            {
+              "id": 1,
+              "title": "Yo perreo sola",
+              "time": 200,
+              "url": "string-solaaa"
+        
+        },
+        {
+              "id": 2,
+              "title": "Yo perreo con dios",
+              "time": 200,
+              "url": "string-diosss"
+        }]
+      },
+        {
+            "id": 1,
+            "title": "Yo si sabe",
+            "year": "2020",
+            "description": "Yo si sabe mami",
+            "url": "url-yoshi-sabe",
+            "songs":  [
+                {
+                "id": 1,
+                "title": "Yo perreo con tu gata",
+                "time": 200,
+                "url": "string-solaaa"
+            
+            },
+            {
+                "id": 2,
+                "title": "Yo perreo con el diablo",
+                "time": 200,
+                "url": "string-diosss"
+            }]
+        }
+    ]
+  }
