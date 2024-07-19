@@ -81,7 +81,7 @@ public class ArtistController {
         artists.add(savedArtista);
         if (artistToCreate.getSingleSongList() != null) {
             for (Song song : artistToCreate.getSingleSongList()) {
-                Song existingSong = songRepository.findByTitle(song.getTitle());
+                Song existingSong = songRepository.findById(song.getId()).orElse(null);
                 if (existingSong == null) {
                     if (song.getTime() == null) {
                         throw new ApiRuntimeException("Can't create song " + song.getTitle() + " because time is null", 412);
