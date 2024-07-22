@@ -26,15 +26,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.AlbumSpecification;
+import com.musicapp.musicstream.common.HistoryVoid;
 import com.musicapp.musicstream.dto.AlbumDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Album;
 import com.musicapp.musicstream.entities.Artist;
 import com.musicapp.musicstream.entities.FilterStruct;
+import com.musicapp.musicstream.entities.History;
 import com.musicapp.musicstream.entities.Song;
 import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.repository.AlbumRepository;
 import com.musicapp.musicstream.repository.ArtistRepository;
+import com.musicapp.musicstream.repository.HistoryRepository;
 import com.musicapp.musicstream.repository.SongRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,6 +61,12 @@ public class AlbumController {
 
     @Autowired
     private DTOUtils dtoUtil;
+
+    @Autowired
+    private HistoryRepository historyRepository;
+
+    @Autowired
+    private HistoryVoid historyVoid;
 
     @Operation(summary = "Create a new album")
     @PostMapping
@@ -109,7 +118,9 @@ public class AlbumController {
 
             songRepository.save(song);
         }
-        //Creamos el DTO del album
+
+        // Añadir el álbum al historial
+        historyVoid.createEntry("Album", savedAlbum.getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -194,7 +205,16 @@ public class AlbumController {
             songRepository.save(song);
         }
 
+                //Eliminar el artista del historial
+        Iterable<History> histories = historyRepository.findAll();
+        for (History history : histories) {
+            if (history.getType().equals("album") && history.getIdEntity().equals(id)) {
+                historyRepository.delete(history);
+            }
+        }
+
         albumRepository.deleteById(id);
+        historyVoid.deleteEntries("Album",id);
         return ResponseEntity.noContent().build();
     }
 

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.GenreSpecification;
+import com.musicapp.musicstream.common.HistoryVoid;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.dto.GenreDTO;
 import com.musicapp.musicstream.entities.FilterStruct;
@@ -51,6 +52,9 @@ public class GenreController {
     @Autowired
     private DTOUtils dtoUtil;
 
+    @Autowired
+    private HistoryVoid historyVoid;
+
     @Operation(summary = "Create a new genre")
     @PostMapping
     public ResponseEntity<GenreDTO> createGenre(@RequestBody Genre genreDTO) {
@@ -76,6 +80,9 @@ public class GenreController {
 
 
         Genre savedGenre = genreRepository.save(genre);
+
+        // Crear una entrada en la tabla history
+        historyVoid.createEntry("Genre", savedGenre.getId());
         GenreDTO genreDTOResponse = dtoUtil.convertToDto(savedGenre);
         //Devolver un CREATED 201
         return ResponseEntity.status(201).body(genreDTOResponse);
@@ -136,6 +143,7 @@ public class GenreController {
         }
 
         genreRepository.deleteById(id);
+        historyVoid.deleteEntries("Genre", id);
         return ResponseEntity.noContent().build();
     }
 

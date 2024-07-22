@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.common.HistoryVoid;
 import com.musicapp.musicstream.common.SongSpecification;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.dto.SongDTO;
@@ -61,6 +62,9 @@ public class SongController {
     
     @Autowired
     private DTOUtils dtoUtil;
+
+    @Autowired
+    private HistoryVoid historyVoid;
 
     @Operation(summary = "Create a new song")
     @PostMapping
@@ -121,6 +125,7 @@ public class SongController {
             genreRepository.save(genre);
         }
         
+        historyVoid.createEntry("Song", savedSong.getId());
         // Creamos el DTO
         SongDTO songDTO = dtoUtil.convertToDto(savedSong);
         songDTO.setId(savedSong.getId());
@@ -153,6 +158,7 @@ public class SongController {
         List<SongDTO> songsDTO = songs.stream()
                                              .map(dtoUtil::convertToDto)
                                              .collect(Collectors.toList());
+        
         return ResponseEntity.ok(songsDTO);
     }
 
@@ -225,6 +231,7 @@ public class SongController {
         }
         
         songRepository.deleteById(id);
+        historyVoid.deleteEntries("Song", id);
         return ResponseEntity.noContent().build();
     }
 

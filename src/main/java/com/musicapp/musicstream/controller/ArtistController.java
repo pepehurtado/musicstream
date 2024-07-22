@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.common.ArtistSpecification;
+import com.musicapp.musicstream.common.HistoryVoid;
 import com.musicapp.musicstream.dto.ArtistDTO;
 import com.musicapp.musicstream.dto.DTOUtils;
 import com.musicapp.musicstream.entities.Album;
@@ -57,6 +58,9 @@ public class ArtistController {
 
     @Autowired
     private DTOUtils dtoUtil;
+
+    @Autowired
+    private HistoryVoid historyVoid;
 
     @Operation(summary = "Create a new artist")
     @PostMapping
@@ -137,7 +141,9 @@ public class ArtistController {
             }
         }
     
-        artistRepository.save(savedArtista);
+        savedArtista = artistRepository.save(savedArtista);
+        
+        historyVoid.createEntry("Artist", savedArtista.getId());
     
         return ResponseEntity.ok(dtoUtil.convertToDto(savedArtista));
     }
@@ -239,6 +245,9 @@ public class ArtistController {
         }
     
         artistRepository.delete(artist);
+
+        historyVoid.deleteEntries("Artist", id);
+        
         return ResponseEntity.noContent().build();
     }
 
