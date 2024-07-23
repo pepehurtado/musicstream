@@ -257,7 +257,9 @@ public class AlbumController {
         Album album = albumOptional.get();
         if (albumDetails.getTitle() != null) {
             if(albumRepository.findByTitle(albumDetails.getTitle()) != null){
-                throw new ApiRuntimeException("This album name already exists " + albumDetails.getTitle(), 409);
+                if(!album.getTitle().equals(albumDetails.getTitle())){
+                    throw new ApiRuntimeException("This album name already exists " + albumDetails.getTitle(), 409);
+                }
             }
             album.setTitle(albumDetails.getTitle());
         }
@@ -271,7 +273,8 @@ public class AlbumController {
             album.setNumberOfSongs(albumDetails.getNumberOfSongs());
         }
         if (albumDetails.getArtist() != null) {
-            album.setArtist(albumDetails.getArtist());
+            Artist artist = artistRepository.findById(albumDetails.getArtist().getId()).orElse(null);
+            album.setArtist(artist);
         }
         if (albumDetails.getUrl() != null) {
             album.setUrl(albumDetails.getUrl());

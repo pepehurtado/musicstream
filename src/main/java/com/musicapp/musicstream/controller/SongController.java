@@ -86,7 +86,7 @@ public class SongController {
                 throw new ApiRuntimeException("The album with ID " + song.getAlbum().getId() + " does not exist ", 412);
             } else {
                 Album album = albumRepository.findById(song.getAlbum().getId()).get();
-                album.setNumberOfSongs(album.getSongs().size());
+                album.setNumberOfSongs(album.getSongs().size() + 1);
                 albumRepository.save(album);
                 song.setAlbum(album);
             }
