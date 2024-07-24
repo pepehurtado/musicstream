@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Bean;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 
-@SpringBootApplication
+@SpringBootApplication(exclude= {org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class})
 public class MusicstreamApplication {
 
 	public static void main(String[] args) {
