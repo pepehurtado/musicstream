@@ -1,23 +1,31 @@
 package com.musicapp.musicstream.jwt;
 
-import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+
+import javax.crypto.SecretKey;
 
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
-    
-    private final Key secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+    private final SecretKey secretKey;
+
+    public JwtUtil() {
+        // Decodifica la clave secreta de Base64
+        String base64SecretKey = "SGF6dGVVbmFHYXlvbGFNaUN1Y29KZWplUXVlTWlyYXNBcXVpRmFu"; 
+        byte[] decodedKey = Base64.getDecoder().decode(base64SecretKey);
+        this.secretKey = Keys.hmacShaKeyFor(decodedKey);
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -33,7 +41,11 @@ public class JwtUtil {
     }
 
     public Claims extractAllClaims(String token) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody();
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Boolean isTokenExpired(String token) {
@@ -41,22 +53,26 @@ public class JwtUtil {
     }
 
     public String generateToken(String username, String role) {
-        Map<String,Object> claims = new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
-        return createToken(claims, username);    
-}
+        return createToken(claims, username);
+    }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder().
-        setClaims(claims).
-        setSubject(subject).
-        setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
-                .signWith(SignatureAlgorithm.HS256,secretKey).compact();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // Expira en 10 horas
+                .signWith(secretKey) // Usa la clave decodificada
+                .compact();
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String usernameToken = extractUsername(token);
+        // Compara el nombre de usuario del token con el nombre de usuario del UserDetails
+        userDetails.getUsername();
+        usernameToken.equals(userDetails.getUsername());
         return (usernameToken.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 }

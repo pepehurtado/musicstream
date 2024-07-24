@@ -25,48 +25,45 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private CustomerDetailsService customerDetailsService;
 
-
-    private String username =null;
-
+    private String username = null;
     Claims claims = null;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if(request.getServletPath().matches("/user/login|user/forgotPassword|user/signup")){
+        if (request.getServletPath().matches("/api/users/register|/api/users/login|/api/users/forgot-password")) {
             filterChain.doFilter(request, response);
-        }
-        else{
+        } else {
             final String authorizationHeader = request.getHeader("Authorization");
             String token = null;
 
-            if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 token = authorizationHeader.substring(7);
                 username = jwtUtil.extractUsername(token);
                 claims = jwtUtil.extractAllClaims(token);
             }
-            if(username != null && SecurityContextHolder.getContext().getAuthentication() == null){
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = customerDetailsService.loadUserByUsername(username);
-                if(jwtUtil.validateToken(token, userDetails)){
+                if (jwtUtil.validateToken(token, userDetails)) {
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    new WebAuthenticationDetailsSource().buildDetails(request);
-                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);}
+                    usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                }
             }
             filterChain.doFilter(request, response);
         }
     }
 
-
-    public Boolean isAdmin(){
+    public Boolean isAdmin() {
         return claims.get("role").equals("admin");
     }
 
-    public Boolean isUser(){
+    public Boolean isUser() {
         return claims.get("role").equals("user");
-    }   
+    }
 
-    public String getCurrentUser(){
+    public String getCurrentUser() {
         return username;
     }
-    
 }

@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class CustomerDetailsService implements UserDetailsService{
 
-
     @Autowired
     private UserRepository userRepository;
 
@@ -29,19 +28,16 @@ public class CustomerDetailsService implements UserDetailsService{
         log.info("username: {}", username);
         userDetails = userRepository.findByUsername(username);
 
-        if(!Objects.isNull(userDetails)){
+        if (!Objects.isNull(userDetails)) {
             log.info("userDetails: {}", userDetails);
-            return new org.springframework.security.core.userdetails.User(userDetails.getEmail(), userDetails.getPassword(), new ArrayList());
-        }
-        else{
+            return new org.springframework.security.core.userdetails.User(userDetails.getUsername(), userDetails.getPassword(), new ArrayList<>());
+        } else {
             log.error("User not found");
             throw new UsernameNotFoundException("User not found");
         }
-
     }
 
-    public User getUserDetails(){
+    public User getUserDetails() {
         return userDetails;
     }
-    
 }
