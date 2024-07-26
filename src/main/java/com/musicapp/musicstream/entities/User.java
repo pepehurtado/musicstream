@@ -33,8 +33,6 @@ public class User {
 
     private String image;
 
-    private String roles;
-
     @Column(name = "security_question")
     private String securityQuestion;
 

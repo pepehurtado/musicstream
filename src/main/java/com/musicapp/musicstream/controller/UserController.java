@@ -1,11 +1,13 @@
 package com.musicapp.musicstream.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,15 +18,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.dto.UserDTO;
 import com.musicapp.musicstream.entities.User;
 import com.musicapp.musicstream.jwt.CustomerDetailsService;
 import com.musicapp.musicstream.jwt.JwtUtil;
 import com.musicapp.musicstream.repository.UserRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/users")
+@Tag(name = "User", description = "Operations related to User")
 public class UserController {
 
     @Autowired
@@ -43,21 +50,51 @@ public class UserController {
     private BCryptPasswordEncoder passwordEncoder;
     // Crear un nuevo usuario
     @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@Valid @RequestBody User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+    public ResponseEntity<User> registerUser(@Valid @RequestBody UserDTO userDTO) {
+        User user = new User();
+        user.setUsername(userDTO.getUsername());
+        user.setEmail(userDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setImage(userDTO.getImage());
+        user.setSecurityQuestion(userDTO.getSecurityQuestion());
+        user.setSecurityAnswer(userDTO.getSecurityAnswer());
+        //Poner la fecha real de creacion del usuario y modificaciones
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestParam String username, @RequestParam String password) {
+@PostMapping("/login")
+public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+    try {
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(username, password));
 
         // Genera el token JWT
         String token = jwtUtil.generateToken(username, "user");
-        return ResponseEntity.ok(token);
+
+        // Envolver el token en un objeto JSON
+        return ResponseEntity.ok(new JwtResponse(token));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
     }
+}
+
+// Clase para envolver la respuesta JWT
+class JwtResponse {
+    private String token;
+
+    public JwtResponse(String token) {
+        this.token = token;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+}
 
     // Obtener un usuario por nombre de usuario
     @GetMapping("/{username}")
