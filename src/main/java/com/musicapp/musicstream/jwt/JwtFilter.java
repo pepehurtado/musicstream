@@ -35,13 +35,18 @@ public class JwtFilter extends OncePerRequestFilter {
         } else {
             final String authorizationHeader = request.getHeader("Authorization");
             String token = null;
-
+    
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 token = authorizationHeader.substring(7);
                 username = jwtUtil.extractUsername(token);
                 claims = jwtUtil.extractAllClaims(token);
+    
+                // Log the token and claims for debugging
+                System.out.println("Extracted Token: " + token);
+                System.out.println("Extracted Username: " + username);
+                System.out.println("Extracted Claims: " + claims);
             }
-
+    
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = customerDetailsService.loadUserByUsername(username);
                 if (jwtUtil.validateToken(token, userDetails)) {
@@ -56,11 +61,11 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     public Boolean isAdmin() {
-        return claims.get("role").equals("admin");
+        return "ROLE_ADMIN".equals(claims.get("role"));
     }
 
     public Boolean isUser() {
-        return claims.get("role").equals("user");
+        return "ROLE_USER".equals(claims.get("role"));
     }
 
     public String getCurrentUser() {

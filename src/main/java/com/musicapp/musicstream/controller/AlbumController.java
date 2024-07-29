@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,6 +71,7 @@ public class AlbumController {
 
     @Operation(summary = "Create a new album")
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createAlbum(@RequestBody Album album) {
         
         // Si ya existe un álbum con el mismo nombre no se puede crear
@@ -126,6 +128,7 @@ public class AlbumController {
 
     @Operation(summary = "Get all albums")
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') || hasRole('USER')")
     public ResponseEntity<List<AlbumDTO>> getAllAlbums(@RequestParam(required = false, name = "title") String title,
                                                        @RequestParam(required = false, name = "year") Integer year,
                                                        @RequestParam(required = false, name = "numberOfSongs") Integer numberOfSongs,
@@ -155,6 +158,7 @@ public class AlbumController {
         return albumDTO != null ? ResponseEntity.ok(albumDTO) : ResponseEntity.notFound().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')|| hasRole('USER')")
     @Operation(summary = "Get album by name")
     @GetMapping("/name/{name}")
     public ResponseEntity<AlbumDTO> getAlbumByName(@PathVariable String name) {
@@ -167,6 +171,7 @@ public class AlbumController {
         return album != null ? ResponseEntity.ok(albumDTO) : ResponseEntity.notFound().build();
     }
 
+    @PreAuthorize("hasRole('ADMIN') || hasRole('USER')")
     @Operation(summary = "Update album")
     @PutMapping("/{id}")
     public ResponseEntity<AlbumDTO> updateAlbum(@PathVariable Integer id, @RequestBody AlbumDTO albumDetailsDTO) {
@@ -192,6 +197,7 @@ public class AlbumController {
         return ResponseEntity.ok(albumDetailsDTO);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete album")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlbum(@PathVariable Integer id) {
@@ -218,6 +224,8 @@ public class AlbumController {
         return ResponseEntity.noContent().build();
     }
 
+
+    @PreAuthorize("hasRole('ADMIN')|| hasRole('USER')")
     @Operation(summary = "Get album by dynamic filter")
     @PostMapping("/filter")
     public ResponseEntity<?> filterBy(@RequestBody FilterStruct struct) {
@@ -247,6 +255,7 @@ public class AlbumController {
         return ResponseEntity.ok(albumDTOs);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     public ResponseEntity<AlbumDTO> patchAlbum(@PathVariable Integer id, @RequestBody Album albumDetails) {
         Optional<Album> albumOptional = albumRepository.findById(id);

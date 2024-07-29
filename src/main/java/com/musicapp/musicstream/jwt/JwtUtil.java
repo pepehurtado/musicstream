@@ -3,13 +3,18 @@ package com.musicapp.musicstream.jwt;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
+import com.musicapp.musicstream.repository.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -19,6 +24,9 @@ import io.jsonwebtoken.security.Keys;
 public class JwtUtil {
 
     private final SecretKey secretKey;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public JwtUtil() {
         // Decodifica la clave secreta de Base64
@@ -52,11 +60,18 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(String username, String role) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", role);
-        return createToken(claims, username);
-    }
+public String generateToken(String username) {
+    Map<String, Object> claims = new HashMap<>();
+    
+    // Obtener todos los roles del usuario y agregarlos al token
+    List<String> roles = userRepository.findByUsername(username).getRoles().stream()
+            .map(role -> "ROLE_" + role.getName()) // Asegúrate de que role.getName() sea el nombre del rol
+            .collect(Collectors.toList());
+
+    claims.put("roles", roles);
+    
+    return createToken(claims, username);
+}
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()

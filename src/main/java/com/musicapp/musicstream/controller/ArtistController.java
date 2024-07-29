@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,6 +63,7 @@ public class ArtistController {
     @Autowired
     private HistoryVoid historyVoid;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new artist")
     @PostMapping
     public ResponseEntity<ArtistDTO> createArtist(@RequestBody Artist artistToCreate) {
@@ -151,7 +153,7 @@ public class ArtistController {
 
     
 
-
+    @PreAuthorize("hasRole('USER') || hasRole('ADMIN')")
     @Operation(summary = "Get all artists")
     @GetMapping
     public ResponseEntity<List<ArtistDTO>> getAllArtists(
@@ -178,6 +180,7 @@ public class ArtistController {
         return ResponseEntity.ok(artistDTOs);
     }
 
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Get artist by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Integer id) {
@@ -191,6 +194,7 @@ public class ArtistController {
         return artistDTO != null ? ResponseEntity.ok(artistDTO) : ResponseEntity.notFound().build();
     }
 
+    @PreAuthorize("hasRole('USER')")
     @Operation(summary = "Get artist by name")
     @GetMapping("/name/{name}")
     public ResponseEntity<ArtistDTO> getArtistByName(@PathVariable String name) {
@@ -202,6 +206,7 @@ public class ArtistController {
         return ResponseEntity.ok(artistDTO);
     }
 
+    @PreAuthorize("hasRole('USER') || hasRole('ADMIN')")
     @Operation(summary = "Update artist")
     @PutMapping("/{id}")
     public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Integer id, @RequestBody ArtistDTO artistDetailsDTO) {
@@ -222,6 +227,7 @@ public class ArtistController {
         return ResponseEntity.ok(artistDetailsDTO);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete artist")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteArtist(@PathVariable Integer id) {
@@ -251,6 +257,7 @@ public class ArtistController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasRole('USER') || hasRole('ADMIN')")
     @Operation(summary = "Get artist by dynamic filter")
     @PostMapping("/filter")
     public ResponseEntity<?> filterBy(@RequestBody FilterStruct struct) {
@@ -287,6 +294,7 @@ public class ArtistController {
         return ResponseEntity.ok(artistDTOs);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     public ResponseEntity<ArtistDTO> patchArtist(@PathVariable Integer id, @RequestBody Artist artistDetails) {
         if (!artistRepository.existsById(id)) {

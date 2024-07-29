@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,6 +67,7 @@ public class SongController {
     @Autowired
     private HistoryVoid historyVoid;
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new song")
     @PostMapping
     public ResponseEntity<?> createSong(@RequestBody Song song) {
@@ -132,7 +134,7 @@ public class SongController {
         return ResponseEntity.ok(songDTO);
     }
     
-
+    @PreAuthorize("hasRole('ADMIN') || hasRole('USER')")
     @Operation(summary = "Get all songs")
     @GetMapping
     public ResponseEntity<List<SongDTO>> getAllSongs(@RequestParam(required = false) String title,
@@ -162,6 +164,7 @@ public class SongController {
         return ResponseEntity.ok(songsDTO);
     }
 
+    @PreAuthorize("hasRole('ADMIN') || hasRole('USER')")
     @Operation(summary = "Get song by ID")
     @GetMapping("/{id}")
     public ResponseEntity<SongDTO> getSongById(@PathVariable Integer id) {
@@ -186,6 +189,7 @@ public class SongController {
         return ResponseEntity.ok(songDTO);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update song")
     @PutMapping("/{id}")
     public ResponseEntity<SongDTO> updateSong(@PathVariable Integer id, @RequestBody Song songDetails) {
@@ -216,6 +220,7 @@ public class SongController {
         return ResponseEntity.ok(songDTO);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete song")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Integer id) {
@@ -235,7 +240,8 @@ public class SongController {
         return ResponseEntity.noContent().build();
     }
 
-        @Operation(summary = "Get artist by dynamic filter")
+    @PreAuthorize("hasRole('ADMIN') || hasRole('USER')")
+    @Operation(summary = "Get artist by dynamic filter")
     @PostMapping("/filter")
     public ResponseEntity<?> filterBy(@RequestBody FilterStruct struct) {
 
@@ -264,6 +270,7 @@ public class SongController {
         return ResponseEntity.ok(songDTOs);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
     public ResponseEntity<SongDTO> patchSong(@PathVariable Integer id, @RequestBody Song songDetails) {
         

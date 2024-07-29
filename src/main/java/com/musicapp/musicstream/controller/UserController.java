@@ -1,5 +1,8 @@
 package com.musicapp.musicstream.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +22,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.musicapp.musicstream.dto.UserDTO;
+import com.musicapp.musicstream.entities.Role;
 import com.musicapp.musicstream.entities.User;
 import com.musicapp.musicstream.jwt.CustomerDetailsService;
 import com.musicapp.musicstream.jwt.JwtUtil;
+import com.musicapp.musicstream.repository.RoleRepository;
 import com.musicapp.musicstream.repository.UserRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +41,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     AuthenticationManager authenticationManager;
@@ -56,9 +64,12 @@ public class UserController {
         user.setEmail(userDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         user.setImage(userDTO.getImage());
-        user.setSecurityQuestion(userDTO.getSecurityQuestion());
-        user.setSecurityAnswer(userDTO.getSecurityAnswer());
-        //Poner la fecha real de creacion del usuario y modificaciones
+        user.setActive(1);
+        user.setSoftDelete(0);
+        //Añadir el rol de USER
+        List<Role> roles = new ArrayList<>();
+        roles.add(roleRepository.findByName("USER"));
+        user.setRoles(roles);
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
@@ -70,7 +81,7 @@ public ResponseEntity<?> login(@RequestParam String username, @RequestParam Stri
             new UsernamePasswordAuthenticationToken(username, password));
 
         // Genera el token JWT
-        String token = jwtUtil.generateToken(username, "user");
+        String token = jwtUtil.generateToken(username);
 
         // Envolver el token en un objeto JSON
         return ResponseEntity.ok(new JwtResponse(token));
@@ -123,8 +134,6 @@ class JwtResponse {
         user.setUsername(userDetails.getUsername());
         user.setEmail(userDetails.getEmail());
         user.setPassword(userDetails.getPassword());
-        user.setSecurityQuestion(userDetails.getSecurityQuestion());
-        user.setSecurityAnswer(userDetails.getSecurityAnswer());
         User updatedUser = userRepository.save(user);
         return ResponseEntity.ok(updatedUser);
     }
@@ -136,14 +145,48 @@ class JwtResponse {
         return ResponseEntity.noContent().build();
     }
 
-    // Recuperar la contraseña
-    @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestParam String email, @RequestParam String securityAnswer) {
-        User user = userRepository.findByEmail(email);
-        if (user == null || !user.getSecurityAnswer().equals(securityAnswer)) {
-            return ResponseEntity.badRequest().body("Invalid email or security answer");
-        }
-        // En una implementación real, generar y enviar un token para restablecer la contraseña
-        return ResponseEntity.ok("Password recovery instructions sent to your email");
+    // Obtener todos los usuarios
+    @GetMapping
+    public ResponseEntity<Iterable<User>> getAllUsers() {
+        Iterable<User> users = userRepository.findAll();
+        return ResponseEntity.ok(users);
+    }
+
+    // Obtener todos los usuarios activos
+    @GetMapping("/active")
+    public ResponseEntity<Iterable<User>> getAllActiveUsers() {
+        Iterable<User> users = userRepository.findByActive(1);
+        return ResponseEntity.ok(users);
+    }
+
+    //Hacer un soft delete de un usuario
+    @PutMapping("/delete/{id}")
+    public ResponseEntity<User> softDeleteUser(@PathVariable Integer id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setSoftDelete(1);
+        user.setActive(0);
+        User updatedUser = userRepository.save(user);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    //Activar un usuario
+    @PutMapping("/activate/{id}")
+    public ResponseEntity<User> activateUser(@PathVariable Integer id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(1);
+        user.setSoftDelete(0);
+        User updatedUser = userRepository.save(user);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    //Hacer un addRole a un usuario
+    @PostMapping("path/{id}")
+    public ResponseEntity<User> addRole(@PathVariable Integer id, @RequestBody Role role) {
+        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        //Buscar el rol por id
+        Role existRole = roleRepository.findById(role.getId()).orElseThrow(() -> new RuntimeException("Role not found"));
+        user.getRoles().add(existRole);
+        User updatedUser = userRepository.save(user);
+        return ResponseEntity.ok(updatedUser);
     }
 }
