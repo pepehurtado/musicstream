@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +26,7 @@ import com.musicapp.musicstream.common.EmailService;
 import com.musicapp.musicstream.dto.UserDTO;
 import com.musicapp.musicstream.entities.Role;
 import com.musicapp.musicstream.entities.User;
+import com.musicapp.musicstream.exception.ApiRuntimeException;
 import com.musicapp.musicstream.jwt.CustomerDetailsService;
 import com.musicapp.musicstream.jwt.JwtUtil;
 import com.musicapp.musicstream.repository.RoleRepository;
@@ -85,9 +85,7 @@ public class UserController {
 
         // Enviar correo de confirmación
         String activationLink = "http://localhost:9000/api/users/activate?token=" + activationToken;
-        String subject = "Confirma tu cuenta";
-        String text = "Por favor, haz clic en el siguiente enlace para activar tu cuenta: " + activationLink;
-        emailService.sendEmail(user.getEmail(), subject, text);
+        emailService.sendActivationEmail(user.getUsername(), user.getEmail(),activationLink);
 
         return ResponseEntity.ok(savedUser);
     }
@@ -102,12 +100,19 @@ public class UserController {
             userRepository.save(user);
             return ResponseEntity.ok("Cuenta activada exitosamente");
         } else {
-            return ResponseEntity.badRequest().body("Token de activación no válido");
+             throw new ApiRuntimeException("Token de activación no válido : ", 404);
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+        User user = userRepository.findByUsername(username);
+        if(user.getActive() == 0) {
+            throw new ApiRuntimeException("El usuario no está activado, por favor revise su email : " + user.getEmail(), 401);
+        }
+        if(user.getSoftDelete() == 1) {
+            throw new ApiRuntimeException("El usuario ha sido eliminado, contacta con el administrador", 401);
+        }
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(username, password));
@@ -118,7 +123,7 @@ public class UserController {
             // Envolver el token en un objeto JSON
             return ResponseEntity.ok(new JwtResponse(token));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+            throw new ApiRuntimeException("Usuario o contraseña incorrecta", 401);
         }
     }
 
