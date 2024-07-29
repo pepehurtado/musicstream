@@ -2,6 +2,8 @@ package com.musicapp.musicstream.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.musicapp.musicstream.common.EmailService;
 import com.musicapp.musicstream.dto.UserDTO;
 import com.musicapp.musicstream.entities.Role;
 import com.musicapp.musicstream.entities.User;
@@ -31,7 +34,6 @@ import com.musicapp.musicstream.repository.UserRepository;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -56,6 +58,10 @@ public class UserController {
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
+
     // Crear un nuevo usuario
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@Valid @RequestBody UserDTO userDTO) {
@@ -64,50 +70,75 @@ public class UserController {
         user.setEmail(userDTO.getEmail());
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         user.setImage(userDTO.getImage());
-        user.setActive(1);
+        user.setActive(0);
         user.setSoftDelete(0);
-        //Añadir el rol de USER
+
+        // Generar un token de activación único
+        String activationToken = UUID.randomUUID().toString();
+        user.setActivationToken(activationToken);
+
+        // Añadir el rol de USER
         List<Role> roles = new ArrayList<>();
         roles.add(roleRepository.findByName("USER"));
         user.setRoles(roles);
         User savedUser = userRepository.save(user);
+
+        // Enviar correo de confirmación
+        String activationLink = "http://localhost:9000/api/users/activate?token=" + activationToken;
+        String subject = "Confirma tu cuenta";
+        String text = "Por favor, haz clic en el siguiente enlace para activar tu cuenta: " + activationLink;
+        emailService.sendEmail(user.getEmail(), subject, text);
+
         return ResponseEntity.ok(savedUser);
     }
 
-@PostMapping("/login")
-public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
-    try {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(username, password));
-
-        // Genera el token JWT
-        String token = jwtUtil.generateToken(username);
-
-        // Envolver el token en un objeto JSON
-        return ResponseEntity.ok(new JwtResponse(token));
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
-    }
-}
-
-// Clase para envolver la respuesta JWT
-class JwtResponse {
-    private String token;
-
-    public JwtResponse(String token) {
-        this.token = token;
+    @GetMapping("/activate")
+    public ResponseEntity<String> activateUser(@RequestParam String token) {
+        Optional<User> userOptional = userRepository.findByActivationToken(token);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.setActivationToken(null);
+            user.setActive(1);
+            userRepository.save(user);
+            return ResponseEntity.ok("Cuenta activada exitosamente");
+        } else {
+            return ResponseEntity.badRequest().body("Token de activación no válido");
+        }
     }
 
-    public String getToken() {
-        return token;
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestParam String username, @RequestParam String password) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+
+            // Genera el token JWT
+            String token = jwtUtil.generateToken(username);
+
+            // Envolver el token en un objeto JSON
+            return ResponseEntity.ok(new JwtResponse(token));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
+        }
     }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
-}
+    // Clase para envolver la respuesta JWT
+    class JwtResponse {
+        private String token;
 
-    // Obtener un usuario por nombre de usuario
+        public JwtResponse(String token) {
+            this.token = token;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+    }
+
     @GetMapping("/{username}")
     public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
         User user = userRepository.findByUsername(username);
@@ -117,7 +148,6 @@ class JwtResponse {
         return ResponseEntity.ok(user);
     }
 
-    // Obtener un usuario por email
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         User user = userRepository.findByEmail(email);
@@ -127,7 +157,6 @@ class JwtResponse {
         return ResponseEntity.ok(user);
     }
 
-    // Actualizar un usuario existente
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Integer id, @Valid @RequestBody User userDetails) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
@@ -138,28 +167,24 @@ class JwtResponse {
         return ResponseEntity.ok(updatedUser);
     }
 
-    // Eliminar un usuario
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
         userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Obtener todos los usuarios
     @GetMapping
     public ResponseEntity<Iterable<User>> getAllUsers() {
         Iterable<User> users = userRepository.findAll();
         return ResponseEntity.ok(users);
     }
 
-    // Obtener todos los usuarios activos
     @GetMapping("/active")
     public ResponseEntity<Iterable<User>> getAllActiveUsers() {
         Iterable<User> users = userRepository.findByActive(1);
         return ResponseEntity.ok(users);
     }
 
-    //Hacer un soft delete de un usuario
     @PutMapping("/delete/{id}")
     public ResponseEntity<User> softDeleteUser(@PathVariable Integer id) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
@@ -169,7 +194,6 @@ class JwtResponse {
         return ResponseEntity.ok(updatedUser);
     }
 
-    //Activar un usuario
     @PutMapping("/activate/{id}")
     public ResponseEntity<User> activateUser(@PathVariable Integer id) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
@@ -179,11 +203,9 @@ class JwtResponse {
         return ResponseEntity.ok(updatedUser);
     }
 
-    //Hacer un addRole a un usuario
     @PostMapping("path/{id}")
     public ResponseEntity<User> addRole(@PathVariable Integer id, @RequestBody Role role) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-        //Buscar el rol por id
         Role existRole = roleRepository.findById(role.getId()).orElseThrow(() -> new RuntimeException("Role not found"));
         user.getRoles().add(existRole);
         User updatedUser = userRepository.save(user);
