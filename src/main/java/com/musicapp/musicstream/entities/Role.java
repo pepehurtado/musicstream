@@ -2,6 +2,8 @@ package com.musicapp.musicstream.entities;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -32,4 +34,13 @@ public class Role {
         inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
     private List<Permission> permissions;
+
+    @JsonIgnore
+    @ManyToMany(mappedBy = "roles")
+    private List<User> users;
+
+    @Override
+    public String toString() {
+        return "Role [id=" + id + ", name=" + name + "]";
+    }
 }

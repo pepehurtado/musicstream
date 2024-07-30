@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,8 +22,13 @@ import com.musicapp.musicstream.entities.Role;
 import com.musicapp.musicstream.repository.PermissionRepository;
 import com.musicapp.musicstream.repository.RoleRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/roles")
+@Tag(name = "Role", description = "Operations related to Role")
+
 public class RoleController {
 
     @Autowired
@@ -79,6 +85,8 @@ public class RoleController {
     public ResponseEntity<Void> deleteRole(@PathVariable Integer id) {
         Optional<Role> role = roleRepository.findById(id);
         if (role.isPresent()) {
+            //Elimina la relacion de rol con usuario
+            role.get().getUsers().forEach(user -> user.getRoles().remove(role.get()));
             roleRepository.delete(role.get());
             return ResponseEntity.ok().build();
         } else {
