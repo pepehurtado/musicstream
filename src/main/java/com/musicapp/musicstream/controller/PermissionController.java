@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/permissions")
-@Tag(name = "Role", description = "Operations related to Permission")
+@Tag(name = "Permission", description = "Operations related to Permission")
 public class PermissionController {
 
     @Autowired

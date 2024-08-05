@@ -202,11 +202,17 @@ public class UserController {
     @PutMapping("/activate/{id}")
     public ResponseEntity<User> activateUser(@PathVariable Integer id) {
         User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if(user.getActive()==0){
         user.setActive(1);
         user.setSoftDelete(0);
+        }
+        else{
+            user.setActive(0);
+        }
         User updatedUser = userRepository.save(user);
         return ResponseEntity.ok(updatedUser);
     }
+
 
     @PostMapping("path/{id}")
     public ResponseEntity<User> addRole(@PathVariable Integer id, @RequestBody Role role) {
