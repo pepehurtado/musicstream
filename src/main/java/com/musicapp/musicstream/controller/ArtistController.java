@@ -180,7 +180,7 @@ public class ArtistController {
         return ResponseEntity.ok(artistDTOs);
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USER') || hasRole('ADMIN')")
     @Operation(summary = "Get artist by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Integer id) {
@@ -194,7 +194,7 @@ public class ArtistController {
         return artistDTO != null ? ResponseEntity.ok(artistDTO) : ResponseEntity.notFound().build();
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USER') || hasRole('ADMIN')")
     @Operation(summary = "Get artist by name")
     @GetMapping("/name/{name}")
     public ResponseEntity<ArtistDTO> getArtistByName(@PathVariable String name) {
