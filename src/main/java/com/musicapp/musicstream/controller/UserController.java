@@ -97,6 +97,12 @@ public class UserController {
             User user = userOptional.get();
             user.setActivationToken(null);
             user.setActive(1);
+            //poner el rol de USER si no lo tiene
+            if (user.getRoles().isEmpty()) {
+                List<Role> roles = new ArrayList<>();
+                roles.add(roleRepository.findByName("USER"));
+                user.setRoles(roles);
+            }
             userRepository.save(user);
             return ResponseEntity.ok("Cuenta activada exitosamente");
         } else {

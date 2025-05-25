@@ -1,26 +1,13 @@
 package com.musicapp.musicstream.controller;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.musicapp.musicstream.entities.PermissionTranslater;
+import com.musicapp.musicstream.service.PermissionTranslaterService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.musicapp.musicstream.entities.Permission;
-import com.musicapp.musicstream.entities.PermissionTranslater;
-import com.musicapp.musicstream.repository.PermissionRepository;
-import com.musicapp.musicstream.repository.PermissionTranslaterRepository;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -29,65 +16,44 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class PermissionTranslaterController {
 
     @Autowired
-    private PermissionTranslaterRepository permissionTranslaterRepository;
-
-    @Autowired
-    private PermissionRepository permissionRepository;
+    private PermissionTranslaterService permissionTranslaterService;
 
     @GetMapping
-    public List<PermissionTranslater> getAllPermissions() {
-        return (List<PermissionTranslater>) permissionTranslaterRepository.findAll();
+    public List<PermissionTranslater> getAllPermissionTranslations() {
+        return permissionTranslaterService.getAllPermissionTranslations();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PermissionTranslater> getPermissionById(@PathVariable Integer id) {
-        Optional<PermissionTranslater> permission = permissionTranslaterRepository.findById(id);
-        return permission.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<PermissionTranslater> getPermissionTranslationById(@PathVariable Integer id) {
+        return permissionTranslaterService.getPermissionTranslationById(id);
     }
 
     @PostMapping
-    public PermissionTranslater createPermission(@RequestBody PermissionTranslater permissionDetails) {
-        //Buscar el permiso por id y si no existe lanzar excepcion
-        Permission permission = permissionRepository.findById(permissionDetails.getPermission().getId())
-                .orElseThrow(() -> new RuntimeException("Permission not found"));
-        return permissionTranslaterRepository.save(permissionDetails);
+    public PermissionTranslater createPermissionTranslation(@RequestBody PermissionTranslater permissionTranslater) {
+        return permissionTranslaterService.createPermissionTranslation(permissionTranslater);
     }
 
-    //Hacer metodo para buscar por lenguaje
     @GetMapping("/language/{language}")
-    public List<PermissionTranslater> getPermissionByLanguage(@PathVariable String language) {
-        return permissionTranslaterRepository.findByLanguage(language);
+    public List<PermissionTranslater> getPermissionTranslationsByLanguage(@PathVariable String language) {
+        return permissionTranslaterService.getPermissionTranslationsByLanguage(language);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PermissionTranslater> updatePermission(@PathVariable Integer id, @RequestBody PermissionTranslater permissionDetails) {
-        Optional<PermissionTranslater> permission = permissionTranslaterRepository.findById(id);
-        if (permission.isPresent()) {
-            PermissionTranslater existingPermission = permission.get();
-            existingPermission.setPermission(permissionDetails.getPermission());
-            existingPermission.setLanguage(permissionDetails.getLanguage());
-            existingPermission.setTranslation(permissionDetails.getTranslation());
-            return ResponseEntity.ok(permissionTranslaterRepository.save(existingPermission));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<PermissionTranslater> updatePermissionTranslation(
+            @PathVariable Integer id, 
+            @RequestBody PermissionTranslater permissionTranslater) {
+        return permissionTranslaterService.updatePermissionTranslation(id, permissionTranslater);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePermission(@PathVariable Integer id) {
-        Optional<PermissionTranslater> permission = permissionTranslaterRepository.findById(id);
-        if (permission.isPresent()) {
-            permissionTranslaterRepository.delete(permission.get());
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Void> deletePermissionTranslation(@PathVariable Integer id) {
+        return permissionTranslaterService.deletePermissionTranslation(id);
     }
 
-    //Hacer un get para buscar por permiso e idioma
     @GetMapping("/permission/{permissionId}/language/{language}")
-    public ResponseEntity<PermissionTranslater> getPermissionByPermissionAndLanguage(@PathVariable Integer permissionId, @PathVariable String language) {
-        PermissionTranslater permission = permissionTranslaterRepository.findByPermissionIdAndLanguage(permissionId, language);
-        return permission != null ? ResponseEntity.ok(permission) : ResponseEntity.notFound().build();
+    public ResponseEntity<PermissionTranslater> getPermissionTranslationByPermissionAndLanguage(
+            @PathVariable Integer permissionId, 
+            @PathVariable String language) {
+        return permissionTranslaterService.getPermissionTranslationByPermissionAndLanguage(permissionId, language);
     }
 }

@@ -1,24 +1,13 @@
 package com.musicapp.musicstream.controller;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.musicapp.musicstream.entities.Permission;
+import com.musicapp.musicstream.service.PermissionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.musicapp.musicstream.entities.Permission;
-import com.musicapp.musicstream.repository.PermissionRepository;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -27,45 +16,30 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class PermissionController {
 
     @Autowired
-    private PermissionRepository permissionRepository;
+    private PermissionService permissionService;
 
     @GetMapping
     public List<Permission> getAllPermissions() {
-        return (List<Permission>) permissionRepository.findAll();
+        return permissionService.getAllPermissions();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Permission> getPermissionById(@PathVariable Integer id) {
-        Optional<Permission> permission = permissionRepository.findById(id);
-        return permission.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return permissionService.getPermissionById(id);
     }
 
     @PostMapping
     public Permission createPermission(@RequestBody Permission permission) {
-        return permissionRepository.save(permission);
+        return permissionService.createPermission(permission);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Permission> updatePermission(@PathVariable Integer id, @RequestBody Permission permissionDetails) {
-        Optional<Permission> permission = permissionRepository.findById(id);
-        if (permission.isPresent()) {
-            Permission existingPermission = permission.get();
-            existingPermission.setName(permissionDetails.getName());
-            existingPermission.setEntity(permissionDetails.getEntity());
-            return ResponseEntity.ok(permissionRepository.save(existingPermission));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Permission> updatePermission(@PathVariable Integer id, @RequestBody Permission permission) {
+        return permissionService.updatePermission(id, permission);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePermission(@PathVariable Integer id) {
-        Optional<Permission> permission = permissionRepository.findById(id);
-        if (permission.isPresent()) {
-            permissionRepository.delete(permission.get());
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return permissionService.deletePermission(id);
     }
 }
